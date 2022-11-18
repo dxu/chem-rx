@@ -2,9 +2,13 @@
   "name": "chemical-rx",
   "version": "0.0.0",
   "description": "react state primitives powered by rx",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prebuild": "rimraf dist",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "rm -rf ./dist",
+    "build": "npm run prebuild && rollup -c"
   },
   "repository": {
     "type": "git",
@@ -15,5 +19,19 @@
   "bugs": {
     "url": "https://github.com/wetonium/chemical-rx/issues"
   },
-  "homepage": "https://github.com/wetonium/chemical-rx#readme"
+  "homepage": "https://github.com/wetonium/chemical-rx#readme",
+  "devDependencies": {
+    "@babel/core": "^7.20.2",
+    "@babel/plugin-transform-react-jsx": "^7.19.0",
+    "@babel/plugin-transform-typescript": "^7.20.2",
+    "@babel/preset-env": "^7.20.2",
+    "rimraf": "^3.0.2",
+    "rollup": "^3.3.0",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-size-snapshot": "^0.12.0",
+    "rollup-plugin-typescript2": "^0.34.1",
+    "typescript": "^4.9.3"
+  },
+  "dependencies": {}
 }
