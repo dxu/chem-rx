@@ -68,5 +68,5 @@ function createIIFEConfig(input, output, globalName) {
 module.exports = [
   createESMConfig("src/index.ts", "dist/index.js"),
   createCommonJSConfig("src/index.ts", "dist/index.cjs.js"),
-  createIIFEConfig("src/index.ts", "dist/index.iife.js", "chemical-rx"),
+  createIIFEConfig("src/index.ts", "dist/index.iife.js", "chemicalRx"),
 ];
