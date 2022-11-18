@@ -1,0 +1,19 @@
+{
+  "name": "chemical-rx",
+  "version": "0.0.0",
+  "description": "react state primitives powered by rx",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wetonium/chemical-rx.git"
+  },
+  "author": "dxu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wetonium/chemical-rx/issues"
+  },
+  "homepage": "https://github.com/wetonium/chemical-rx#readme"
+}
