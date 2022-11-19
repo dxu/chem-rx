@@ -14,6 +14,7 @@ module.exports = (api, targets) => {
           targets: isTestEnv ? { node: "current" } : targets,
         },
       ],
+      "@babel/preset-typescript",
     ],
     plugins: [
       "@babel/plugin-transform-react-jsx",
