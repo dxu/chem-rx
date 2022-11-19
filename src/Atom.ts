@@ -6,15 +6,16 @@ export class Atom<T> {
   _parentBond?: BehaviorSubject<T>[];
   _bonds: BehaviorSubject<T>[] = [];
 
-  _subscriptions: Subscription[] = [];
+  _fromObservable: Observable<T> | null = null;
+  _fromObservableSubscription: Subscription | null = null;
 
   constructor(private _value: T | Observable<T>) {
     if (isObservable(_value)) {
+      this._fromObservable = _value;
       this._behavior$ = new BehaviorSubject<T>(null!);
-      const subscription = _value.subscribe((value) => {
+      this._fromObservableSubscription = _value.subscribe((value) => {
         this.push(value);
       });
-      this._subscriptions.push(subscription);
     } else {
       // if it's just a value just use a regular behavior subject
       this._behavior$ = new BehaviorSubject<T>(_value);
@@ -38,9 +39,8 @@ export class Atom<T> {
     return this._behavior$.getValue();
   }
 
+  // not needed?
   dispose() {
-    this._subscriptions.map((sub) => {
-      sub.unsubscribe();
-    });
+    this._fromObservableSubscription?.unsubscribe();
   }
 }
