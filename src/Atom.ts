@@ -1,15 +1,15 @@
 import { BehaviorSubject, isObservable, Observable, Subscription } from "rxjs";
 
-export class Atom<T> {
+export default class Atom<T> {
   _behavior$: BehaviorSubject<T>;
 
-  _parentBond?: BehaviorSubject<T>[];
+  _parent?: BehaviorSubject<T>[];
   _bonds: BehaviorSubject<T>[] = [];
 
   _fromObservable: Observable<T> | null = null;
   _fromObservableSubscription: Subscription | null = null;
 
-  constructor(private _value: T | Observable<T>) {
+  constructor(_value: T | Observable<T>) {
     if (isObservable(_value)) {
       this._fromObservable = _value;
       this._behavior$ = new BehaviorSubject<T>(null!);
@@ -26,7 +26,7 @@ export class Atom<T> {
     this._behavior$.next(nextVal);
   }
 
-  bond(...operations: Parameters<Observable<T>["pipe"]>) {
+  transform(...operations: Parameters<Observable<T>["pipe"]>) {
     const observable = this._behavior$.pipe(...operations);
     return new Atom(observable);
   }
