@@ -1,4 +1,4 @@
-import Atom from "../src/Atom";
+import { Atom } from "../src/Atom";
 
 test("Simple atom values test", () => {
   const atom = new Atom("aweofij");

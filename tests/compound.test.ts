@@ -1,5 +1,5 @@
-import Compound, { _Compound } from "../src/Compound";
-import Atom from "../src/Atom";
+import { Compound } from "../src/Compound";
+import { Atom } from "../src/Atom";
 
 test("Mixed object test", () => {
   const comp = new Compound({ a: 100, b: 102, c: { c1: 104 }, d: () => 4 });

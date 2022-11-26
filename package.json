@@ -40,5 +40,6 @@
   "dependencies": {},
   "peerDependencies": {
     "rxjs": "^7.5.7"
-  }
+  },
+  "exports": "./index.js"
 }

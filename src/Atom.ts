@@ -1,6 +1,6 @@
 import { BehaviorSubject, isObservable, Observable, Subscription } from "rxjs";
 
-export default class Atom<T> {
+export class Atom<T> {
   _behavior$: BehaviorSubject<T>;
 
   _parent?: BehaviorSubject<T>[];

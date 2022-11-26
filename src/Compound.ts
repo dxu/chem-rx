@@ -1,5 +1,5 @@
 import { BehaviorSubject } from "rxjs";
-import Atom from "./Atom";
+import { Atom } from "./Atom";
 import { IsntObject, KeyOfType } from "./types";
 
 // type Tree<T extends InType> = {
@@ -15,7 +15,7 @@ function existsInObject(
   return k in obj;
 }
 
-export class _Compound<T extends InType> {
+class _Compound<T extends InType> {
   // _atoms: {
   //   [key in keyof T as T[key] extends object ? never : key]: Atom<T[key]>;
   // } = {};
@@ -96,7 +96,7 @@ type Compound<T extends InType> = _Compound<T> & {
     : Atom<T[k]>;
 };
 
-const Compound: new <T extends InType>(data: T) => Compound<T> =
+export const Compound: new <T extends InType>(data: T) => Compound<T> =
   _Compound as any;
 
 // export class Compound<T> implements T {
@@ -134,4 +134,3 @@ console.log(a2);
 // e.c.get("c1");
 
 // comp.push("a", 11);
-export default Compound;
