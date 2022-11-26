@@ -1,6 +1,4 @@
-// export type KeyOfType<O, T> = {
-//   [K in keyof O]: O[K] extends T ? K : never;
-// }[keyof O];
+// Helper types if needed
 
 export type KeyOfType<T, V> = {
   [K in keyof T]: T[K] extends V ? K : never;
