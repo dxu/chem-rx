@@ -1,4 +1,11 @@
-import { BehaviorSubject, isObservable, Observable, Subscription } from "rxjs";
+import {
+  BehaviorSubject,
+  isObservable,
+  Observable,
+  OperatorFunction,
+  Subscription,
+} from "rxjs";
+import { OverloadedParameters, OverloadedReturnType } from "./types";
 
 export class Atom<T> {
   _behavior$: BehaviorSubject<T>;
@@ -26,7 +33,85 @@ export class Atom<T> {
     this._behavior$.next(nextVal);
   }
 
-  transform(...operations: Parameters<Observable<T>["pipe"]>) {
+  // taken from Observable
+  transform(): Atom<T>;
+  transform<A>(op1: OperatorFunction<T, A>): Atom<A>;
+  transform<A, B>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>
+  ): Atom<B>;
+  transform<A, B, C>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>
+  ): Atom<C>;
+  transform<A, B, C, D>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>,
+    op4: OperatorFunction<C, D>
+  ): Atom<D>;
+  transform<A, B, C, D, E>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>,
+    op4: OperatorFunction<C, D>,
+    op5: OperatorFunction<D, E>
+  ): Atom<E>;
+  transform<A, B, C, D, E, F>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>,
+    op4: OperatorFunction<C, D>,
+    op5: OperatorFunction<D, E>,
+    op6: OperatorFunction<E, F>
+  ): Atom<F>;
+  transform<A, B, C, D, E, F, G>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>,
+    op4: OperatorFunction<C, D>,
+    op5: OperatorFunction<D, E>,
+    op6: OperatorFunction<E, F>,
+    op7: OperatorFunction<F, G>
+  ): Atom<G>;
+  transform<A, B, C, D, E, F, G, H>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>,
+    op4: OperatorFunction<C, D>,
+    op5: OperatorFunction<D, E>,
+    op6: OperatorFunction<E, F>,
+    op7: OperatorFunction<F, G>,
+    op8: OperatorFunction<G, H>
+  ): Atom<H>;
+  transform<A, B, C, D, E, F, G, H, I>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>,
+    op4: OperatorFunction<C, D>,
+    op5: OperatorFunction<D, E>,
+    op6: OperatorFunction<E, F>,
+    op7: OperatorFunction<F, G>,
+    op8: OperatorFunction<G, H>,
+    op9: OperatorFunction<H, I>
+  ): Atom<I>;
+  transform<A, B, C, D, E, F, G, H, I>(
+    op1: OperatorFunction<T, A>,
+    op2: OperatorFunction<A, B>,
+    op3: OperatorFunction<B, C>,
+    op4: OperatorFunction<C, D>,
+    op5: OperatorFunction<D, E>,
+    op6: OperatorFunction<E, F>,
+    op7: OperatorFunction<F, G>,
+    op8: OperatorFunction<G, H>,
+    op9: OperatorFunction<H, I>,
+    ...operations: OperatorFunction<any, any>[]
+  ): Atom<unknown>;
+  transform(
+    ...operations: OverloadedParameters<Observable<T>["pipe"]>
+  ): Atom<any> {
+    // @ts-ignore can't match overloaded function
     const observable = this._behavior$.pipe(...operations);
     return new Atom(observable);
   }
