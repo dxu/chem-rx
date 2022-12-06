@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wetonium/chemical-rx.git"
+    "url": "git+https://github.com/dxu/chemical-rx.git"
   },
   "author": "dxu",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wetonium/chemical-rx/issues"
+    "url": "https://github.com/dxu/chemical-rx/issues"
   },
-  "homepage": "https://github.com/wetonium/chemical-rx#readme",
+  "homepage": "https://github.com/dxu/chemical-rx#readme",
   "devDependencies": {
     "@babel/core": "^7.20.2",
     "@babel/plugin-transform-react-jsx": "^7.19.0",
