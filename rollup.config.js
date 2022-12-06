@@ -21,11 +21,7 @@ function createESMConfig(input, output) {
     output: { file: output, format: "esm" },
     external,
     plugins: [
-      typescript({
-        declaration: true,
-        emitDeclarationOnly: true,
-        outDir: output,
-      }),
+      typescript(),
       babel(getBabelOptions({ node: 8 })),
       sizeSnapshot(),
       resolve({ extensions }),
@@ -39,11 +35,7 @@ function createCommonJSConfig(input, output) {
     output: { file: output, format: "cjs", exports: "named" },
     external,
     plugins: [
-      typescript({
-        declaration: true,
-        emitDeclarationOnly: true,
-        outDir: output,
-      }),
+      typescript(),
       babel(getBabelOptions({ ie: 11 })),
       sizeSnapshot(),
       resolve({ extensions }),
@@ -65,11 +57,7 @@ function createIIFEConfig(input, output, globalName) {
     },
     external,
     plugins: [
-      typescript({
-        declaration: true,
-        emitDeclarationOnly: true,
-        outDir: output,
-      }),
+      typescript(),
       babel(getBabelOptions({ ie: 11 })),
       sizeSnapshot(),
       resolve({ extensions }),
