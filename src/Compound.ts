@@ -1,4 +1,6 @@
+import { zip } from "rxjs";
 import { Atom } from "./Atom";
+import { GetGenericType, KeyOfValueType } from "./types";
 
 type BaseObjectType = { [key: string]: any };
 
@@ -23,6 +25,39 @@ class _Compound<T extends BaseObjectType> {
     });
 
     Object.assign(this, newAttributes);
+  }
+
+  // push multiple at the same time
+  // .push({
+  // x: 1
+  // com: {
+  // y: 1
+  // }
+  // })
+  // should return an observable where you can get all values
+  _push(updates: {
+    [k in keyof T]: T[k] extends Compound<infer C> ? C : GetGenericType<[k]>;
+  }): any {
+    updates;
+    //
+  }
+
+  // set up a behavior for a setter action
+  reaction<R>(
+    action: (args: {
+      [k in KeyOfValueType<T, Atom<GetGenericType<T[k]>>>]: GetGenericType<
+        T[k]
+      >;
+    }) => void
+  ): Atom<R> {
+    action();
+
+    const zipped =
+      zip();
+      // as observable
+
+    return new Atom(zipped);
+    // call the set function
   }
 }
 

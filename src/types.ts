@@ -1,6 +1,10 @@
 // Helper types if needed
 
-export type KeyOfType<T, V> = {
+class GenericClass<T> {}
+export type GetGenericType<C extends GenericClass<any>> =
+  C extends GenericClass<infer T> ? T : unknown;
+
+export type KeyOfValueType<T, V> = {
   [K in keyof T]: T[K] extends V ? K : never;
 }[keyof T];
 
