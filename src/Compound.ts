@@ -29,7 +29,7 @@ class _Compound<T extends BaseObjectType> {
 // Primary export to support extending _Compound with attribute selectors
 type Compound<T extends BaseObjectType> = _Compound<T> & {
   [k in keyof T]: T[k] extends object
-    ? T[k] extends Function
+    ? T[k] extends Function | Array<infer ArrType>
       ? Atom<T[k]>
       : Compound<T[k]>
     : Atom<T[k]>;
