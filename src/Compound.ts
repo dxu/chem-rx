@@ -43,18 +43,24 @@ class _Compound<T extends BaseObjectType> {
   }
 
   // set up a behavior for a setter action
-  reaction<R>(
-    action: (args: {
-      [k in KeyOfValueType<T, Atom<GetGenericType<T[k]>>>]: GetGenericType<
-        T[k]
-      >;
-    }) => void
-  ): Atom<R> {
-    action();
+  reaction(
+    // have both a get and a set, similar to recoil:
+    // https://stackoverflow.com/questions/69943153/multiple-form-values-in-one-react-recoil-atom-override-each-other
+    // https://recoiljs.org/docs/api-reference/core/selector
 
-    const zipped =
-      zip();
-      // as observable
+    // and then you create a  setter ffunction?
+    // and then afterwards, you create an observable that only gets pushed when the setter gets called?
+    // return both the getter and setter
+
+    // setter could create a forkjoin, that gets listened to, and then pushes to the original return observable
+    action: (args: any) => {
+      [k in keyof T]?: T[k] extends Compound<infer C> ? C : GetGenericType<[k]>;
+    }
+  ): Atom<ReturnType<typeof action>> {
+    // action();
+
+    const zipped = zip();
+    // as observable
 
     return new Atom(zipped);
     // call the set function
