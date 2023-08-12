@@ -4,6 +4,7 @@
     "emitDeclarationOnly": true,
     "declarationDir": ".",
     "declarationMap": true,
+    "rootDir": "./src",
     "target": "esnext",
     "strict": true,
     "jsx": "react-jsx",

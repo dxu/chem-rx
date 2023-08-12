@@ -1,8 +1,8 @@
 const path = require("path");
 
-const babel = require("rollup-plugin-babel");
-const resolve = require("rollup-plugin-node-resolve");
-const { sizeSnapshot } = require("rollup-plugin-size-snapshot");
+const babel = require("@rollup/plugin-babel");
+const resolve = require("@rollup/plugin-node-resolve");
+// const { sizeSnapshot } = require("rollup-plugin-size-snapshot");
 const typescript = require("rollup-plugin-typescript2");
 
 const createBabelConfig = require("./babel.config");
@@ -11,6 +11,7 @@ const { root } = path.parse(process.cwd());
 const external = (id) => !id.startsWith(".") && !id.startsWith(root);
 const extensions = [".js", ".ts", ".tsx"];
 const getBabelOptions = (targets) => ({
+  babelHelpers: "bundled",
   ...createBabelConfig({ env: (env) => env === "build" }, targets),
   extensions,
 });
@@ -23,7 +24,7 @@ function createESMConfig(input, output) {
     plugins: [
       typescript(),
       babel(getBabelOptions({ node: 8 })),
-      sizeSnapshot(),
+      // sizeSnapshot(),
       resolve({ extensions }),
     ],
   };
@@ -37,7 +38,7 @@ function createCommonJSConfig(input, output) {
     plugins: [
       typescript(),
       babel(getBabelOptions({ ie: 11 })),
-      sizeSnapshot(),
+      // sizeSnapshot(),
       resolve({ extensions }),
     ],
   };
@@ -53,13 +54,14 @@ function createIIFEConfig(input, output, globalName) {
       name: globalName,
       globals: {
         react: "React",
+        rxjs: "rxjs",
       },
     },
     external,
     plugins: [
       typescript(),
       babel(getBabelOptions({ ie: 11 })),
-      sizeSnapshot(),
+      // sizeSnapshot(),
       resolve({ extensions }),
     ],
   };
