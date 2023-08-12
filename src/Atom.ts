@@ -1,11 +1,16 @@
 import {
   BehaviorSubject,
+  combineLatest,
   isObservable,
   Observable,
   OperatorFunction,
   Subscription,
 } from "rxjs";
 import { OverloadedParameters, OverloadedReturnType } from "./types";
+
+export type AtomTuple<T> = {
+  [K in keyof T]: Atom<T[K]>;
+};
 
 export class Atom<T> {
   _behavior$: BehaviorSubject<T>;
@@ -15,6 +20,13 @@ export class Atom<T> {
 
   _fromObservable: Observable<T> | null = null;
   _fromObservableSubscription: Subscription | null = null;
+
+  static combine<A extends readonly unknown[]>(
+    ...atoms: readonly [...AtomTuple<A>]
+  ): Atom<A> {
+    const observable = combineLatest(...atoms.map((a) => a._behavior$));
+    return new Atom(observable) as unknown as Atom<A>;
+  }
 
   constructor(_value: T | Observable<T>) {
     if (isObservable(_value)) {
@@ -108,6 +120,7 @@ export class Atom<T> {
     op9: OperatorFunction<H, I>,
     ...operations: OperatorFunction<any, any>[]
   ): Atom<unknown>;
+
   transform(
     ...operations: OverloadedParameters<Observable<T>["pipe"]>
   ): Atom<any> {
