@@ -42,5 +42,15 @@
   "peerDependencies": {
     "react": "^18.2.0",
     "rxjs": "^7.5.7"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      },
+      "default": "./dist/index.cjs.js"
+    }
   }
 }
