@@ -4,8 +4,8 @@ const { visualizer } = require("rollup-plugin-visualizer");
 
 const babel = require("@rollup/plugin-babel");
 const resolve = require("@rollup/plugin-node-resolve");
+const typescript = require("@rollup/plugin-typescript");
 // const { sizeSnapshot } = require("rollup-plugin-size-snapshot");
-const typescript = require("rollup-plugin-typescript2");
 
 const createBabelConfig = require("./babel.config");
 
@@ -18,13 +18,29 @@ const getBabelOptions = (targets) => ({
   extensions,
 });
 
+function createDeclarationConfig(input, output) {
+  return {
+    input,
+    output: {
+      dir: output,
+    },
+    external,
+    plugins: [
+      typescript({
+        declaration: true,
+        emitDeclarationOnly: true,
+        outDir: output,
+      }),
+    ],
+  };
+}
+
 function createESMConfig(input, output) {
   return {
     input,
     output: { file: output, format: "esm" },
     external,
     plugins: [
-      typescript(),
       babel(getBabelOptions({ node: 8 })),
       // sizeSnapshot(),
       resolve({ extensions }),
@@ -39,7 +55,6 @@ function createCommonJSConfig(input, output) {
     output: { file: output, format: "cjs", exports: "named" },
     external,
     plugins: [
-      typescript(),
       babel(getBabelOptions({ ie: 11 })),
       // sizeSnapshot(),
       resolve({ extensions }),
@@ -62,7 +77,6 @@ function createIIFEConfig(input, output, globalName) {
     },
     external,
     plugins: [
-      typescript(),
       babel(getBabelOptions({ ie: 11 })),
       // sizeSnapshot(),
       resolve({ extensions }),
@@ -71,6 +85,7 @@ function createIIFEConfig(input, output, globalName) {
 }
 
 module.exports = [
+  createDeclarationConfig(`src/index.ts`, "dist"),
   createESMConfig("src/index.ts", "dist/index.js"),
   createCommonJSConfig("src/index.ts", "dist/index.cjs.js"),
   createIIFEConfig("src/index.ts", "dist/index.iife.js", "chemicalRx"),

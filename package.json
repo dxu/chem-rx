@@ -44,13 +44,10 @@
     "rxjs": "^7.5.7"
   },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": {
-        "types": "./index.d.ts",
-        "default": "./index.js"
-      },
-      "default": "./dist/index.cjs.js"
-    }
+    ".": "./dist/index.js",
+    "./index.cjs.js": "./dist/index.cjs.js"
+  },
+  "dependencies": {
+    "@rollup/plugin-typescript": "^11.1.2"
   }
 }
