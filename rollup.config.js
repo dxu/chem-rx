@@ -1,5 +1,7 @@
 const path = require("path");
 
+const { visualizer } = require("rollup-plugin-visualizer");
+
 const babel = require("@rollup/plugin-babel");
 const resolve = require("@rollup/plugin-node-resolve");
 // const { sizeSnapshot } = require("rollup-plugin-size-snapshot");
@@ -26,6 +28,7 @@ function createESMConfig(input, output) {
       babel(getBabelOptions({ node: 8 })),
       // sizeSnapshot(),
       resolve({ extensions }),
+      visualizer(),
     ],
   };
 }
