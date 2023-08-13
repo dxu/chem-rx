@@ -1,4 +1,4 @@
 export { Atom } from "./Atom";
 export { useAtom } from "./useAtom";
-export { hydrateAtom } from "./hydrateAtom";
-export { Sign } from "./Signal";
+export { hydrateAtoms } from "./hydrateAtoms";
+export { Signal } from "./Signal";
