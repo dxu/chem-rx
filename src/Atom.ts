@@ -2,6 +2,7 @@ import {
   BehaviorSubject,
   combineLatest,
   isObservable,
+  map,
   Observable,
   OperatorFunction,
   Subscription,
@@ -37,31 +38,31 @@ export class ReadOnlyAtom<T> {
   }
 
   // taken from Observable
-  transform(): ReadOnlyAtom<T>;
-  transform<A>(op1: OperatorFunction<T, A>): ReadOnlyAtom<A>;
-  transform<A, B>(
+  pipe(): ReadOnlyAtom<T>;
+  pipe<A>(op1: OperatorFunction<T, A>): ReadOnlyAtom<A>;
+  pipe<A, B>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>
   ): ReadOnlyAtom<B>;
-  transform<A, B, C>(
+  pipe<A, B, C>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>
   ): ReadOnlyAtom<C>;
-  transform<A, B, C, D>(
+  pipe<A, B, C, D>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
     op4: OperatorFunction<C, D>
   ): ReadOnlyAtom<D>;
-  transform<A, B, C, D, E>(
+  pipe<A, B, C, D, E>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
     op4: OperatorFunction<C, D>,
     op5: OperatorFunction<D, E>
   ): ReadOnlyAtom<E>;
-  transform<A, B, C, D, E, F>(
+  pipe<A, B, C, D, E, F>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
@@ -69,7 +70,7 @@ export class ReadOnlyAtom<T> {
     op5: OperatorFunction<D, E>,
     op6: OperatorFunction<E, F>
   ): ReadOnlyAtom<F>;
-  transform<A, B, C, D, E, F, G>(
+  pipe<A, B, C, D, E, F, G>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
@@ -78,7 +79,7 @@ export class ReadOnlyAtom<T> {
     op6: OperatorFunction<E, F>,
     op7: OperatorFunction<F, G>
   ): ReadOnlyAtom<G>;
-  transform<A, B, C, D, E, F, G, H>(
+  pipe<A, B, C, D, E, F, G, H>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
@@ -88,7 +89,7 @@ export class ReadOnlyAtom<T> {
     op7: OperatorFunction<F, G>,
     op8: OperatorFunction<G, H>
   ): ReadOnlyAtom<H>;
-  transform<A, B, C, D, E, F, G, H, I>(
+  pipe<A, B, C, D, E, F, G, H, I>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
@@ -99,7 +100,7 @@ export class ReadOnlyAtom<T> {
     op8: OperatorFunction<G, H>,
     op9: OperatorFunction<H, I>
   ): ReadOnlyAtom<I>;
-  transform<A, B, C, D, E, F, G, H, I>(
+  pipe<A, B, C, D, E, F, G, H, I>(
     op1: OperatorFunction<T, A>,
     op2: OperatorFunction<A, B>,
     op3: OperatorFunction<B, C>,
@@ -112,7 +113,7 @@ export class ReadOnlyAtom<T> {
     ...operations: OperatorFunction<any, any>[]
   ): ReadOnlyAtom<unknown>;
 
-  transform(
+  pipe(
     ...operations: OverloadedParameters<Observable<T>["pipe"]>
   ): ReadOnlyAtom<any> {
     // @ts-ignore can't match overloaded function
@@ -120,6 +121,10 @@ export class ReadOnlyAtom<T> {
     const newAtom = new ReadOnlyAtom(observable);
 
     return newAtom;
+  }
+
+  transform(transformFn: (value: T, index: number) => any): ReadOnlyAtom<any> {
+    return this.pipe(map(transformFn));
   }
 
   subscribe(...params: Parameters<BehaviorSubject<T>["subscribe"]>) {
