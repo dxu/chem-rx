@@ -1,6 +1,6 @@
-# chemRx
+# chem-rx
 
-`chemRx` wraps`rx.js` to provide a state management solution focused on
+`chem-rx` wraps`rx.js` to provide a state management solution focused on
 simplicity. Useable with or without React!
 
 ## Atom
@@ -12,7 +12,7 @@ simplicity. Useable with or without React!
 Atoms are state containers that take any value - object, array, or primitive.
 
 ```
-import { Atom } from 'chemRx'
+import { Atom } from 'chem-rx'
 
 const numberAtom: BaseAtom = Atom(0)
 const stringAtom: BaseAtom = Atom('hello')

@@ -1,6 +1,6 @@
 {
-  "name": "chemRx",
-  "version": "0.0.7",
+  "name": "chem-rx",
+  "version": "0.0.0",
   "description": "react state primitives powered by rx.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dxu/chemRx.git"
+    "url": "git+https://github.com/dxu/chem-rx.git"
   },
   "author": "dxu",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dxu/chemRx/issues"
+    "url": "https://github.com/dxu/chem-rx/issues"
   },
-  "homepage": "https://github.com/dxu/chemRx#readme",
+  "homepage": "https://github.com/dxu/chem-rx#readme",
   "devDependencies": {
     "@babel/core": "^7.22.10",
     "@babel/plugin-transform-react-jsx": "^7.22.5",
