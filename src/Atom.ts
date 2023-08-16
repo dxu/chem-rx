@@ -142,7 +142,7 @@ export class ReadOnlyAtom<T> {
 }
 
 export class BaseAtom<T> extends ReadOnlyAtom<T> {
-  next(nextVal: T) {
+  set(nextVal: T) {
     this._behavior$.next(nextVal);
   }
 }

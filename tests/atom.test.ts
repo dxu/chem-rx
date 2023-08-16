@@ -12,7 +12,7 @@ test("Base Atom values test", () => {
   expect(atom instanceof BaseAtom).toBe(true);
   expect(atom.value()).toBe("aweofij");
 
-  atom.next("apro");
+  atom.set("apro");
 
   expect(atom.value()).toBe("apro");
 });
