@@ -10,7 +10,7 @@ import {
 import { OverloadedParameters, OverloadedReturnType } from "./types";
 
 export type AtomTuple<T> = {
-  [K in keyof T]: Atom<T[K]>;
+  [K in keyof T]: ReadOnlyAtom<T[K]>;
 };
 
 // export class ReadOnlyAtom<T> {}
@@ -131,7 +131,7 @@ export class ReadOnlyAtom<T> {
     return this._behavior$.subscribe(...params);
   }
 
-  getValue() {
+  value() {
     return this._behavior$.getValue();
   }
 
@@ -141,16 +141,60 @@ export class ReadOnlyAtom<T> {
   }
 }
 
-export class Atom<T> extends ReadOnlyAtom<T> {
-  static combine<A extends readonly unknown[]>(
-    ...atoms: readonly [...AtomTuple<A>]
-  ): ReadOnlyAtom<A> {
-    const observable = combineLatest(...atoms.map((a) => a._behavior$));
-    const newAtom = new ReadOnlyAtom(observable) as unknown as ReadOnlyAtom<A>;
-    return newAtom;
-  }
-
-  push(nextVal: T) {
+export class BaseAtom<T> extends ReadOnlyAtom<T> {
+  next(nextVal: T) {
     this._behavior$.next(nextVal);
   }
 }
+
+export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
+  push(nextVal: T) {
+    this._behavior$.next([...this._behavior$.getValue(), nextVal]);
+  }
+  get(idx: number) {
+    return this.value()[idx];
+  }
+}
+
+export class ObjectAtom<
+  T extends Record<K, V>,
+  K extends keyof T = keyof T,
+  V = T[K]
+> extends ReadOnlyAtom<T> {
+  set(nextKey: K, nextValue: V) {
+    this._behavior$.next({
+      ...this._behavior$.getValue(),
+      [nextKey]: nextValue,
+    });
+  }
+  get(nextKey: K) {
+    return this.value()[nextKey];
+  }
+}
+
+export function Atom<T>(value: T[]): ArrayAtom<T>;
+export function Atom<T extends object, K extends keyof T = keyof T>(
+  _value: T
+): ObjectAtom<T>;
+export function Atom<T>(_value: Observable<T> | T): BaseAtom<T>;
+export function Atom<T>(
+  _value: T | Observable<T>
+): BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T> {
+  let atom;
+  if (Array.isArray(_value)) {
+    atom = new ArrayAtom<T>(_value); // For arrays
+  } else if (typeof _value === "object" && _value !== null) {
+    atom = new ObjectAtom<T>(_value); // For objects
+  } else {
+    atom = new BaseAtom(_value); // For other types
+  }
+  return atom;
+}
+
+Atom.combine = <A extends readonly unknown[]>(
+  ...atoms: readonly [...AtomTuple<A>]
+): ReadOnlyAtom<A> => {
+  const observable = combineLatest(...atoms.map((a) => a._behavior$));
+  const newAtom = new ReadOnlyAtom(observable) as unknown as ReadOnlyAtom<A>;
+  return newAtom;
+};
