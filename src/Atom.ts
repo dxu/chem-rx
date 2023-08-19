@@ -148,6 +148,9 @@ export class BaseAtom<T> extends ReadOnlyAtom<T> {
 }
 
 export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
+  constructor(initialValue: T[]) {
+    super(initialValue);
+  }
   push(nextVal: T) {
     this._behavior$.next([...this._behavior$.getValue(), nextVal]);
   }
@@ -172,11 +175,13 @@ export class ObjectAtom<
   }
 }
 
-export function Atom<T>(value: T[]): ArrayAtom<T>;
-export function Atom<T extends object, K extends keyof T = keyof T>(
-  _value: T
+// export type Atom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
+
+export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
+export function Atom<T extends object & { length?: undefined }>(
+  value: T
 ): ObjectAtom<T>;
-export function Atom<T>(_value: Observable<T> | T): BaseAtom<T>;
+export function Atom<T>(value: Observable<T> | T): BaseAtom<T>;
 export function Atom<T>(
   _value: T | Observable<T>
 ): BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T> {

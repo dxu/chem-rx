@@ -54,7 +54,9 @@ test("Object Atom get function test", () => {
 });
 
 test("Array Atom values test", () => {
-  const atom = Atom(["first"]);
+  const atom = Atom<string[]>(["first"]);
+  // this is not allowed
+  // atom.push(1);
   expect(atom instanceof ArrayAtom).toBe(true);
   expect(atom.value().length).toBe(1);
   expect(atom.value()[0]).toBe("first");
@@ -65,7 +67,8 @@ test("Array Atom values test", () => {
 });
 
 test("Array Atom get index test", () => {
-  const atom = Atom(["first"]);
+  const atom = Atom<string[]>(["first"]);
+
   expect(atom instanceof ArrayAtom).toBe(true);
   expect(atom.value().length).toBe(1);
   expect(atom.get(0)).toBe("first");
