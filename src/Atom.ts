@@ -1,6 +1,7 @@
 import {
   BehaviorSubject,
   combineLatest,
+  distinctUntilKeyChanged,
   isObservable,
   map,
   Observable,
@@ -173,15 +174,23 @@ export class ObjectAtom<
   get(nextKey: K) {
     return this.value()[nextKey];
   }
+
+  select(key: K) {
+    const newObs = this._behavior$.pipe(
+      distinctUntilKeyChanged(key),
+      map((k) => k?.[key])
+    );
+    return Atom(newObs);
+  }
 }
 
-// export type Atom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
+export type AnyAtom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
 
+export function Atom<T>(value: Observable<T> | T): BaseAtom<T>;
 export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
 export function Atom<T extends object & { length?: undefined }>(
   value: T
 ): ObjectAtom<T>;
-export function Atom<T>(value: Observable<T> | T): BaseAtom<T>;
 export function Atom<T>(
   _value: T | Observable<T>
 ): BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T> {
