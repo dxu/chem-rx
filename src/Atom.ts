@@ -124,8 +124,8 @@ export class ReadOnlyAtom<T> {
     return newAtom;
   }
 
-  transform(transformFn: (value: T, index: number) => any): ReadOnlyAtom<any> {
-    return this.pipe(map(transformFn));
+  derive(deriveFn: (value: T, index: number) => any): ReadOnlyAtom<any> {
+    return this.pipe(map(deriveFn));
   }
 
   subscribe(...params: Parameters<BehaviorSubject<T>["subscribe"]>) {
@@ -152,9 +152,11 @@ export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
   constructor(initialValue: T[]) {
     super(initialValue);
   }
+
   push(nextVal: T) {
     this._behavior$.next([...this._behavior$.getValue(), nextVal]);
   }
+
   get(idx: number) {
     return this.value()[idx];
   }
@@ -171,6 +173,7 @@ export class ObjectAtom<
       [nextKey]: nextValue,
     });
   }
+
   get(nextKey: K) {
     return this.value()[nextKey];
   }

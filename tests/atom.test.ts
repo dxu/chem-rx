@@ -83,23 +83,23 @@ test("Test native pipe", () => {
   expect(atom instanceof BaseAtom).toBe(true);
   expect(atom.value()).toBe(3);
 
-  const transformedAtom = atom.pipe(map((x) => x * x));
-  expect(transformedAtom instanceof ReadOnlyAtom).toBe(true);
-  expect(transformedAtom).not.toHaveProperty("push");
+  const derivedAtom = atom.pipe(map((x) => x * x));
+  expect(derivedAtom instanceof ReadOnlyAtom).toBe(true);
+  expect(derivedAtom).not.toHaveProperty("push");
 
-  expect(transformedAtom.value()).toBe(9);
+  expect(derivedAtom.value()).toBe(9);
 });
 
-test("Test transform", () => {
+test("Test derive", () => {
   const atom = Atom(3);
   expect(atom instanceof BaseAtom).toBe(true);
   expect(atom.value()).toBe(3);
 
-  const transformedAtom = atom.transform((x) => x * x);
-  expect(transformedAtom instanceof ReadOnlyAtom).toBe(true);
-  expect(transformedAtom).not.toHaveProperty("push");
+  const derivedAtom = atom.derive((x) => x * x);
+  expect(derivedAtom instanceof ReadOnlyAtom).toBe(true);
+  expect(derivedAtom).not.toHaveProperty("push");
 
-  expect(transformedAtom.value()).toBe(9);
+  expect(derivedAtom.value()).toBe(9);
 });
 
 test("Test combine", () => {
@@ -109,11 +109,9 @@ test("Test combine", () => {
     c: { name: "c" },
   });
   const ids = Atom<string[]>(["a", "b", "c"]);
-  const combined = Atom.combine(normalizedData, ids).transform(
-    ([normed, ids]) => {
-      return ids.map((id) => normed[id]);
-    }
-  );
+  const combined = Atom.combine(normalizedData, ids).derive(([normed, ids]) => {
+    return ids.map((id) => normed[id]);
+  });
   expect(combined).not.toHaveProperty("push");
 
   expect(combined instanceof ReadOnlyAtom).toBe(true);
