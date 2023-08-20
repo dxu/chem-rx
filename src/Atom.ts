@@ -189,11 +189,14 @@ export class ObjectAtom<
 
 export type AnyAtom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
 
-export function Atom<T>(value: Observable<T> | T): BaseAtom<T>;
 export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
+export function Atom<T extends Observable<K>, K>(
+  value: Observable<K>
+): BaseAtom<K>;
 export function Atom<T extends object & { length?: undefined }>(
   value: T
 ): ObjectAtom<T>;
+export function Atom<T>(value: T): BaseAtom<T>;
 export function Atom<T>(
   _value: T | Observable<T>
 ): BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T> {
