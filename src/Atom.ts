@@ -187,16 +187,56 @@ export class ObjectAtom<
   }
 }
 
+type ObservableType<T> = T extends Observable<infer U>
+  ? U extends any[]
+    ? "array"
+    : "object"
+  : "other";
+
+// catch-all for developers
 export type AnyAtom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
 
+type ObservableEmission<T> = T extends Observable<infer U extends any[]>
+  ? U
+  : never;
+
+// array type
 export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
+
+// export function Atom<T extends Observable<A>, A extends S[], S = A[number]>(
+//   value: T
+// ): ArrayAtom<S>;
+
+// observable<array> type
+// export function Atom<T extends Observable<any[]>>(
+//   value: T
+// ): ArrayAtom<ObservableEmission<T>[number]>;
+export function Atom<T extends Observable<A>, A extends S[], S = A[number]>(
+  value: Observable<A>
+): ArrayAtom<S>;
+
+// observable<record> type
+export function Atom<
+  T extends Observable<R>,
+  R extends Record<K, V>,
+  K extends keyof T = keyof T,
+  V = T[K]
+>(value: Observable<R>): ObjectAtom<R>;
+
+// observable type (primitive)
 export function Atom<T extends Observable<K>, K>(
   value: Observable<K>
 ): BaseAtom<K>;
-export function Atom<T extends object & { length?: undefined }>(
-  value: T
-): ObjectAtom<T>;
+
+// object type (record)
+export function Atom<
+  T extends Record<K, V>,
+  K extends keyof T = keyof T,
+  V = T[K]
+>(value: T): ObjectAtom<T>;
+// primitive type
 export function Atom<T>(value: T): BaseAtom<T>;
+// function definition
 export function Atom<T>(
   _value: T | Observable<T>
 ): BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T> {

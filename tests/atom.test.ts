@@ -5,7 +5,7 @@ import {
   ObjectAtom,
   ReadOnlyAtom,
 } from "../src/Atom";
-import { map, of } from "rxjs";
+import { BehaviorSubject, map, of } from "rxjs";
 
 test("Base Atom values test", () => {
   const atom = Atom("aweofij");
@@ -123,4 +123,46 @@ test("Test combine", () => {
   expect(combinedValue[0].name).toBe("a");
   expect(combinedValue[1].name).toBe("b");
   expect(combinedValue[2].name).toBe("c");
+});
+
+test("Test select (simple)", () => {
+  const arrayAtom = Atom<{ [key: string]: number[] }>({
+    a: [0, 1, 2],
+    b: [1, 3, 4],
+    c: [5, 3, 4],
+  });
+
+  const normalizedData = Atom<{ [key: string]: { name: string } }>({
+    a: { name: "a" },
+    b: { name: "b" },
+    c: { name: "c" },
+  });
+
+  const beh = new BehaviorSubject(["a"]);
+  const test = Atom(beh);
+  const beh2 = new BehaviorSubject({ a: 1 });
+  const test2 = Atom(beh2);
+
+  const selected = normalizedData.select("a");
+  const selectedArr = arrayAtom.select("a");
+
+  expect(selected instanceof ObjectAtom).toBe(true);
+
+  expect(selected instanceof ObjectAtom).toBe(true);
+
+  // const combined = Atom.combine(normalizedData, ids).derive(([normed, ids]) => {
+  //   return ids.map((id) => normed[id]);
+  // });
+  //
+  // expect(combined).not.toHaveProperty("push");
+  //
+  // expect(combined instanceof ReadOnlyAtom).toBe(true);
+  //
+  // expect(combined instanceof ReadOnlyAtom).toBe(true);
+  // expect(combined).not.toHaveProperty("push");
+  // const combinedValue = combined.value();
+  // expect(combinedValue.length).toBe(3);
+  // expect(combinedValue[0].name).toBe("a");
+  // expect(combinedValue[1].name).toBe("b");
+  // expect(combinedValue[2].name).toBe("c");
 });
