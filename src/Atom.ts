@@ -124,7 +124,7 @@ export class ReadOnlyAtom<T> {
     return newAtom;
   }
 
-  derive(deriveFn: (value: T, index: number) => any): ReadOnlyAtom<any> {
+  derive(deriveFn: (value: T, index: number) => any) {
     return this.pipe(map(deriveFn));
   }
 
@@ -163,20 +163,21 @@ export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
 }
 
 export class ObjectAtom<
-  T extends Record<string, infer V>
-> extends ReadOnlyAtom<T> {
-  set(nextKey: keyof T, nextValue: T[keyof T]) {
+  K extends string | number | symbol,
+  V
+> extends ReadOnlyAtom<Record<K, V>> {
+  set(nextKey: K, nextValue: V) {
     this._behavior$.next({
       ...this._behavior$.getValue(),
       [nextKey]: nextValue,
     });
   }
 
-  get(nextKey: keyof T) {
+  get(nextKey: K) {
     return this.value()[nextKey];
   }
 
-  select(key: keyof T) {
+  select(key: K) {
     const newObs = this._behavior$.pipe(
       distinctUntilKeyChanged(key),
       map((k) => k?.[key])
@@ -185,14 +186,8 @@ export class ObjectAtom<
   }
 }
 
-type ObservableType<T> = T extends Observable<infer U>
-  ? U extends any[]
-    ? "array"
-    : "object"
-  : "other";
-
 // catch-all for developers
-export type AnyAtom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
+// export type AnyAtom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
 
 type ObservableArrayContents<T> = T extends Observable<infer U extends any[]>
   ? U
@@ -208,42 +203,56 @@ type ObservableRecordContents<T> = T extends Observable<
 export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
 
 // observable<array> type
-export function Atom<
-  T extends Observable<A>,
-  A extends any[] = ObservableArrayContents<T>
->(value: T): ArrayAtom<A[number]>;
+// export function Atom<
+//   T extends Observable<A>,
+//   A extends any[] = ObservableArrayContents<T>
+// >(value: T): ArrayAtom<A[number]>;
+
+// observable<array> type
+export function Atom<T extends any[]>(
+  value: Observable<T>
+): ArrayAtom<T[number]>;
 
 // observable<record> type
-export function Atom<T extends Observable<R>, R = ObservableRecordContents<T>>(
-  value: Observable<R>
-): ObjectAtom<R>;
+export function Atom<T extends Record<Extract<keyof T, string>, T[keyof T]>>(
+  value: Observable<T>
+): ObjectAtom<keyof T, T[keyof T]>;
 
 // observable type (primitive)
 export function Atom<T extends Observable<K>, K>(
   value: Observable<K>
 ): BaseAtom<K>;
 
+// array type
+export function Atom<T extends any[]>(
+  value: T extends string ? never : T
+): ArrayAtom<T[number]>;
+
 // object type (record)
-export function Atom<
-  T extends Record<K, V>,
-  K extends string = keyof T & string,
-  V = T[K]
->(value: T): ObjectAtom<T>;
+export function Atom<T extends Record<Extract<keyof T, string>, T[keyof T]>>(
+  value: T extends string ? never : T
+): ObjectAtom<keyof T, T[keyof T]>;
+
 // primitive type
 export function Atom<T>(value: T): BaseAtom<T>;
+
 // function definition
 export function Atom<T>(
-  _value: T | Observable<T>
-): BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T> {
+  _value: T
+): T extends Record<Extract<keyof T, string>, T[keyof T]>
+  ? ObjectAtom<Extract<keyof T, string>, T[keyof T]>
+  : BaseAtom<T> | ArrayAtom<T> {
   let atom;
   if (Array.isArray(_value)) {
     atom = new ArrayAtom<T>(_value); // For arrays
   } else if (typeof _value === "object" && _value !== null) {
-    atom = new ObjectAtom<T>(_value); // For objects
+    atom = new ObjectAtom<keyof T, T[keyof T]>(_value); // For objects
   } else {
     atom = new BaseAtom(_value); // For other types
   }
-  return atom;
+  return atom as T extends Record<Extract<keyof T, string>, T[keyof T]>
+    ? ObjectAtom<Extract<keyof T, string>, T[keyof T]>
+    : BaseAtom<T> | ArrayAtom<T>;
 }
 
 Atom.combine = <A extends readonly unknown[]>(

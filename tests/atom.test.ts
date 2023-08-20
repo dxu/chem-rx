@@ -126,6 +126,17 @@ test("Test combine", () => {
 });
 
 test("Test select (simple)", () => {
+  enum TEST_ENUM {
+    a = "weoifj",
+    b = "oh",
+  }
+
+  // test types
+  const enumTest = Atom(TEST_ENUM.a);
+
+  const arrayTest = Atom([1, 2, 34]);
+  const arrayTest2 = Atom([{ a: "jwoi" }, 2, 34]);
+
   const arrayAtom = Atom<{ [key: string]: number[] }>({
     a: [0, 1, 2],
     b: [1, 3, 4],
@@ -139,12 +150,17 @@ test("Test select (simple)", () => {
   });
 
   const beh = new BehaviorSubject(["a"]);
-  const test = Atom(beh);
-  const beh2 = new BehaviorSubject({ a: 1 });
+  const test = Atom<string[]>(beh);
+  const beh2 = new BehaviorSubject<{ [id: string]: number }>({ a: 1 });
+  const test1 = Atom<{ [id: string]: number }>(beh2);
   const test2 = Atom(beh2);
 
-  const selected = normalizedData.select("a");
+  const selected = normalizedData.select("b");
+  const selected2 = normalizedData.select("a");
+
   const selectedArr = arrayAtom.select("a");
+
+  const sel3 = test2.select("a");
 
   expect(selected instanceof ObjectAtom).toBe(true);
 

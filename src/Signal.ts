@@ -1,8 +1,8 @@
 import {
-  Subject,
   isObservable,
   Observable,
   OperatorFunction,
+  Subject,
   Subscription,
 } from "rxjs";
 import { OverloadedParameters, OverloadedReturnType } from "./types";
