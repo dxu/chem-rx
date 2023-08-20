@@ -163,22 +163,20 @@ export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
 }
 
 export class ObjectAtom<
-  T extends Record<K, V>,
-  K extends keyof T = keyof T,
-  V = T[K]
+  T extends Record<string, infer V>
 > extends ReadOnlyAtom<T> {
-  set(nextKey: K, nextValue: V) {
+  set(nextKey: keyof T, nextValue: T[keyof T]) {
     this._behavior$.next({
       ...this._behavior$.getValue(),
       [nextKey]: nextValue,
     });
   }
 
-  get(nextKey: K) {
+  get(nextKey: keyof T) {
     return this.value()[nextKey];
   }
 
-  select(key: K) {
+  select(key: keyof T) {
     const newObs = this._behavior$.pipe(
       distinctUntilKeyChanged(key),
       map((k) => k?.[key])
@@ -196,32 +194,29 @@ type ObservableType<T> = T extends Observable<infer U>
 // catch-all for developers
 export type AnyAtom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
 
-type ObservableEmission<T> = T extends Observable<infer U extends any[]>
+type ObservableArrayContents<T> = T extends Observable<infer U extends any[]>
+  ? U
+  : never;
+
+type ObservableRecordContents<T> = T extends Observable<
+  infer U extends Record<string, infer V>
+>
   ? U
   : never;
 
 // array type
 export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
 
-// export function Atom<T extends Observable<A>, A extends S[], S = A[number]>(
-//   value: T
-// ): ArrayAtom<S>;
-
 // observable<array> type
-// export function Atom<T extends Observable<any[]>>(
-//   value: T
-// ): ArrayAtom<ObservableEmission<T>[number]>;
-export function Atom<T extends Observable<A>, A extends S[], S = A[number]>(
-  value: Observable<A>
-): ArrayAtom<S>;
+export function Atom<
+  T extends Observable<A>,
+  A extends any[] = ObservableArrayContents<T>
+>(value: T): ArrayAtom<A[number]>;
 
 // observable<record> type
-export function Atom<
-  T extends Observable<R>,
-  R extends Record<K, V>,
-  K extends keyof T = keyof T,
-  V = T[K]
->(value: Observable<R>): ObjectAtom<R>;
+export function Atom<T extends Observable<R>, R = ObservableRecordContents<T>>(
+  value: Observable<R>
+): ObjectAtom<R>;
 
 // observable type (primitive)
 export function Atom<T extends Observable<K>, K>(
@@ -231,7 +226,7 @@ export function Atom<T extends Observable<K>, K>(
 // object type (record)
 export function Atom<
   T extends Record<K, V>,
-  K extends keyof T = keyof T,
+  K extends string = keyof T & string,
   V = T[K]
 >(value: T): ObjectAtom<T>;
 // primitive type
