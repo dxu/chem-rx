@@ -143,24 +143,32 @@ test("Test select (simple)", () => {
     c: [5, 3, 4],
   });
 
-  const normalizedData = Atom<{ [key: string]: { name: string } }>({
+  const primitiveNum = new BehaviorSubject(4);
+  const primitiveNumAtom = Atom<number>(primitiveNum);
+
+  const primitiveStr = new BehaviorSubject("a");
+  const primitiveStringAtom = Atom<string>(primitiveStr);
+
+  const arrayObs = new BehaviorSubject(["a"]);
+  const arrayObsAtom = Atom<string[]>(arrayObs);
+
+  const objObs = new BehaviorSubject({ a: 1 });
+  const objObsAtom2 = Atom(objObs);
+  const objObsAtom1 = Atom<{ [id: string]: number }>(objObs);
+
+  const normalizedData = Atom<{ [key: string]: { [key: string]: string } }>({
     a: { name: "a" },
     b: { name: "b" },
     c: { name: "c" },
   });
-
-  const beh = new BehaviorSubject(["a"]);
-  const test = Atom<string[]>(beh);
-  const beh2 = new BehaviorSubject<{ [id: string]: number }>({ a: 1 });
-  const test1 = Atom<{ [id: string]: number }>(beh2);
-  const test2 = Atom(beh2);
-
   const selected = normalizedData.select("b");
   const selected2 = normalizedData.select("a");
+  const selectedArray = arrayAtom.select("b");
 
+  // THIS IS HTE LAST ONE THT STILL OES NOTWOK
   const selectedArr = arrayAtom.select("a");
 
-  const sel3 = test2.select("a");
+  const sel3 = objObsAtom2.select("a");
 
   expect(selected instanceof ObjectAtom).toBe(true);
 
