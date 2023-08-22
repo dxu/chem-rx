@@ -53,6 +53,23 @@ test("Object Atom get function test", () => {
   expect(atom.get("thirdKey")).toBe("thirdValue");
 });
 
+test("Object Enum Atom test", () => {
+  enum testEnum {
+    first,
+    second,
+  }
+  const atom = Atom({
+    [testEnum.first]: "firstValue",
+    [testEnum.second]: "secondValue",
+  });
+  expect(atom instanceof ObjectAtom).toBe(true);
+  expect(atom.get(testEnum.first)).toBe("firstValue");
+
+  expect(atom.get(testEnum.second)).toBe("secondValue");
+  atom.set(testEnum.second, "newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("newSecondValue");
+});
+
 test("Array Atom values test", () => {
   const atom = Atom<string[]>(["first"]);
   // this is not allowed
@@ -129,6 +146,7 @@ test("Test select (simple)", () => {
   enum TEST_ENUM {
     a = "weoifj",
     b = "oh",
+    c = "ohoij",
   }
 
   // test types
@@ -156,13 +174,36 @@ test("Test select (simple)", () => {
   const objObsAtom2 = Atom(objObs);
   const objObsAtom1 = Atom<{ [id: string]: number }>(objObs);
 
-  const normalizedData = Atom<{ [key: string]: { [key: string]: string } }>({
-    a: { name: "a" },
-    b: { name: "b" },
-    c: { name: "c" },
+  const normalizedStringData = Atom<{
+    [key: string]: { [key: string]: string };
+  }>({
+    a: { a: "a" },
+    b: { b: "b" },
+    c: { c: "c" },
   });
-  const selected = normalizedData.select("b");
-  const selected2 = normalizedData.select("a");
+
+  const selectedString: ObjectAtom<{ [key: string]: string }> =
+    normalizedStringData.select("b");
+
+  const normalizedOptionalStringData = Atom<{
+    [key: string]: { [key in "a" | "b" | "c"]?: string };
+  }>({
+    a: { a: "a" },
+    b: { b: "b" },
+    c: { c: "c" },
+  });
+
+  const selectedOptionalString = normalizedOptionalStringData.select("b");
+
+  const normalizedEnumData = Atom<{
+    [key: string]: { [key in TEST_ENUM]?: string };
+  }>({
+    a: { [TEST_ENUM.a]: "a" },
+    b: { [TEST_ENUM.b]: "b" },
+    c: { [TEST_ENUM.c]: "c" },
+  });
+  const selected = normalizedEnumData.select("b");
+  const selected2 = normalizedEnumData.select("a");
   const selectedArray = arrayAtom.select("b");
 
   // THIS IS HTE LAST ONE THT STILL OES NOTWOK

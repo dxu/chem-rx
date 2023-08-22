@@ -21,6 +21,9 @@ export class ObjectClass<
     [key in K]: V;
   }
 > extends ReadOnlyClass<T> {
+  select(
+    key: K
+  ): T[K] extends { [key: string]: infer V } ? ObjectClass<K, V> : BaseClass<V>;
   select(key: K) {
     const newObs = new Wrapper(this.value[key]);
     return Class(newObs);

@@ -163,13 +163,11 @@ export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
 }
 
 export class ObjectAtom<
-  K extends string | number | symbol,
-  V,
   T extends {
     [key in K]: V;
-  } = {
-    [key in K]: V;
-  }
+  },
+  K extends string | number | symbol = keyof T,
+  V = T[K]
 > extends ReadOnlyAtom<T> {
   set(nextKey: K, nextValue: V) {
     this._behavior$.next({
@@ -182,13 +180,23 @@ export class ObjectAtom<
     return this.value()[nextKey];
   }
 
-  select(key: K) {
+  select<K extends keyof T>(
+    key: K
+  ): T[K] extends (infer W)[]
+    ? ArrayAtom<W>
+    : T[K] extends { [key in infer L]?: infer W }
+    ? ObjectAtom<T[K]>
+    : BaseAtom<T> {
     const newObs = this._behavior$.pipe(
       distinctUntilKeyChanged(key),
       map((k) => k?.[key])
     );
-    // return Atom<T[K]>(newObs);
-    return Atom(newObs);
+    // Can't get typescript to recognize the types here so I'm cheating
+    return Atom(newObs) as unknown as T[K] extends (infer W)[]
+      ? ArrayAtom<W>
+      : T[K] extends { [key in infer L]?: infer W }
+      ? ObjectAtom<T[K]>
+      : BaseAtom<T>;
   }
 }
 
@@ -212,7 +220,7 @@ export function Atom<T>(
   }
     ? Observable<T>
     : never
-): ObjectAtom<keyof T, T[keyof T], T>;
+): ObjectAtom<T>;
 
 // array type
 export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
@@ -220,7 +228,7 @@ export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
 // object type
 export function Atom<T extends { [key: string]: T[keyof T] }>(
   value: T
-): ObjectAtom<keyof T, T[keyof T]>;
+): ObjectAtom<T>;
 
 // primitive type
 export function Atom<T>(value: T): BaseAtom<T>;
@@ -231,7 +239,7 @@ export function Atom<T>(_value: T) {
   if (Array.isArray(_value)) {
     atom = new ArrayAtom<T>(_value); // For arrays
   } else if (typeof _value === "object" && _value !== null) {
-    atom = new ObjectAtom<keyof T, T[keyof T]>(_value); // For objects
+    atom = new ObjectAtom<T>(_value); // For objects
   } else {
     atom = new BaseAtom(_value); // For other types
   }
