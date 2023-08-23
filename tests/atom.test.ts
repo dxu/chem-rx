@@ -234,7 +234,7 @@ test("Test select (simple)", () => {
   const objObsAtom2 = Atom(objObs);
   const objObsAtom1 = Atom<{ [id: string]: number }>(objObs);
 
-  const normalizedStringData = Atom<{
+  const stringData = Atom<{
     [key: string]: { [key: string]: string };
   }>({
     a: { a: "a" },
@@ -243,7 +243,7 @@ test("Test select (simple)", () => {
   });
 
   const selectedString: ObjectAtom<{ [key: string]: string }> =
-    normalizedStringData.select("b");
+    stringData.select("b");
 
   const normalizedOptionalStringData = Atom<{
     [key: string]: { [key in "a" | "b" | "c"]?: string };
@@ -291,3 +291,49 @@ test("Test select (simple)", () => {
   // expect(combinedValue[1].name).toBe("b");
   // expect(combinedValue[2].name).toBe("c");
 });
+
+test("Test select (nested objects)", () => {
+  const nestedData = Atom<{
+    [key: string]: {
+      nickname: string;
+      education: {
+        school: string;
+        graduation: number;
+      };
+    };
+  }>({
+    stacy: {
+      nickname: "stace",
+      education: {
+        school: "Penn",
+        graduation: 2014,
+      },
+    },
+    annie: {
+      nickname: "ann",
+      education: {
+        school: "Brown",
+        graduation: 2015,
+      },
+    },
+    prabhu: {
+      nickname: "prab",
+      education: {
+        school: "MIT",
+        graduation: 2016,
+      },
+    },
+  });
+  const stacy = nestedData.select("stacy");
+  const stacySchool = nestedData.select("stacy").select("education");
+
+  expect(stacy.get("nickname")).toBe("stace");
+  expect(stacySchool.get("school")).toBe("Penn");
+  expect(stacySchool.get("graduation")).toBe(2014);
+});
+
+/*
+ * TODO:
+ * - test react hooks
+ * - test subscriptions
+ */
