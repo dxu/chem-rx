@@ -5,7 +5,7 @@ import {
   ObjectAtom,
   ReadOnlyAtom,
 } from "../src/Atom";
-import { BehaviorSubject, map, of } from "rxjs";
+import { BehaviorSubject, map } from "rxjs";
 
 test("Base Atom values test", () => {
   const atom = Atom("aweofij");
@@ -102,7 +102,7 @@ test("Test native pipe", () => {
 
   const derivedAtom = atom.pipe(map((x) => x * x));
   expect(derivedAtom instanceof ReadOnlyAtom).toBe(true);
-  expect(derivedAtom).not.toHaveProperty("push");
+  expect(derivedAtom).not.toHaveProperty("set");
 
   expect(derivedAtom.value()).toBe(9);
 });
@@ -114,9 +114,24 @@ test("Test derive", () => {
 
   const derivedAtom = atom.derive((x) => x * x);
   expect(derivedAtom instanceof ReadOnlyAtom).toBe(true);
-  expect(derivedAtom).not.toHaveProperty("push");
+  expect(derivedAtom).not.toHaveProperty("set");
 
   expect(derivedAtom.value()).toBe(9);
+});
+
+test("Test derive update", () => {
+  const atom = Atom(3);
+  expect(atom instanceof BaseAtom).toBe(true);
+  expect(atom.value()).toBe(3);
+
+  const derivedAtom = atom.derive((x) => x * x);
+  expect(derivedAtom instanceof ReadOnlyAtom).toBe(true);
+  expect(derivedAtom).not.toHaveProperty("set");
+
+  expect(derivedAtom.value()).toBe(9);
+
+  atom.set(4);
+  expect(derivedAtom.value()).toBe(16);
 });
 
 test("Test combine", () => {
@@ -129,12 +144,12 @@ test("Test combine", () => {
   const combined = Atom.combine(normalizedData, ids).derive(([normed, ids]) => {
     return ids.map((id) => normed[id]);
   });
-  expect(combined).not.toHaveProperty("push");
+  expect(combined).not.toHaveProperty("set");
 
   expect(combined instanceof ReadOnlyAtom).toBe(true);
 
   expect(combined instanceof ReadOnlyAtom).toBe(true);
-  expect(combined).not.toHaveProperty("push");
+  expect(combined).not.toHaveProperty("set");
   const combinedValue = combined.value();
   expect(combinedValue.length).toBe(3);
   expect(combinedValue[0].name).toBe("a");

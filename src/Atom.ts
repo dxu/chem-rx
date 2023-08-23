@@ -113,7 +113,6 @@ export class ReadOnlyAtom<T> {
     op9: OperatorFunction<H, I>,
     ...operations: OperatorFunction<any, any>[]
   ): ReadOnlyAtom<unknown>;
-
   pipe(
     ...operations: OverloadedParameters<Observable<T>["pipe"]>
   ): ReadOnlyAtom<any> {
@@ -124,7 +123,7 @@ export class ReadOnlyAtom<T> {
     return newAtom;
   }
 
-  derive(deriveFn: (value: T, index: number) => any) {
+  derive<A>(deriveFn: (value: T, index: number) => A): ReadOnlyAtom<A> {
     return this.pipe(map(deriveFn));
   }
 
