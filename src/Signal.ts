@@ -1,13 +1,6 @@
-import {
-  isObservable,
-  Observable,
-  OperatorFunction,
-  Subject,
-  Subscription,
-} from "rxjs";
-import { OverloadedParameters, OverloadedReturnType } from "./types";
+import { Subject } from "rxjs";
 
-export class Signal<T = void> {
+export class BaseSignal<T = any> {
   _subject$: Subject<T>;
 
   constructor() {
@@ -22,9 +15,6 @@ export class Signal<T = void> {
   subscribe(...params: Parameters<Subject<T>["subscribe"]>) {
     return this._subject$.subscribe(...params);
   }
-
-  // not needed?
-  dispose() {
-    this._subject$.unsubscribe();
-  }
 }
+
+export function Signal<T>() {}
