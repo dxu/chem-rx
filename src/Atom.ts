@@ -8,7 +8,7 @@ import {
   OperatorFunction,
   Subscription,
 } from "rxjs";
-import { OverloadedParameters, OverloadedReturnType } from "./types";
+import { OverloadedParameters } from "./types";
 
 export type AtomTuple<T> = {
   [K in keyof T]: ReadOnlyAtom<T[K]>;

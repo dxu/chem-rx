@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Atom, ReadOnlyAtom } from "./Atom";
+import { ReadOnlyAtom } from "./Atom";
 
 export function useAtom<T>(atom: ReadOnlyAtom<T>): T {
   const [value, setValue] = useState<T>(atom.value());

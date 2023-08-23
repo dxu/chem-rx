@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
-import { Atom, ObjectAtom } from "./Atom";
-import { distinctUntilKeyChanged } from "rxjs";
+import { ObjectAtom } from "./Atom";
 
 export function useSelectAtom<
-  T extends Record<K, V>,
-  K extends keyof T = keyof T,
+  T extends {
+    [key in K]: V;
+  },
+  K extends string | number | symbol = keyof T,
   V = T[K]
->(atom: ObjectAtom<T>, key: K): V {
-  const [value, setValue] = useState<V>(atom.get(key));
+>(atom: ObjectAtom<T>, key: K): T[K] {
+  const [value, setValue] = useState<T[K]>(atom.get(key));
 
   useEffect(() => {
     const subscription = atom.select(key).subscribe((val) => {
-      setValue(val);
+      setValue(val as T[K]);
     });
 
     return () => {
