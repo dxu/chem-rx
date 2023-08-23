@@ -139,6 +139,45 @@ export class ReadOnlyAtom<T> {
   dispose() {
     this._fromObservableSubscription?.unsubscribe();
   }
+
+  get(
+    key: T extends (infer W)[]
+      ? number
+      : T extends { [key in keyof T]: infer W }
+      ? keyof T
+      : undefined
+  ): T extends (infer W)[]
+    ? T[number]
+    : T extends { [key in keyof T]: infer W }
+    ? T[keyof T]
+    : undefined {
+    const val = this.value() as T;
+    // @ts-ignore Can't figure out this type so i'm REALLY cheating
+    return val[key] as T extends (infer W)[]
+      ? T[number]
+      : T extends { [key in keyof T]: infer W }
+      ? T[keyof T]
+      : undefined;
+  }
+
+  select<K extends keyof T>(
+    key: K
+  ): T[K] extends (infer W)[]
+    ? ArrayAtom<W>
+    : T[K] extends { [key: string | symbol]: infer W }
+    ? ObjectAtom<T[K]>
+    : BaseAtom<T[K]> {
+    const newObs = this._behavior$.pipe(
+      distinctUntilKeyChanged(key),
+      map((k) => k?.[key])
+    );
+    // Can't get typescript to recognize the types here so I'm cheating
+    return Atom(newObs) as unknown as T[K] extends (infer W)[]
+      ? ArrayAtom<W>
+      : T[K] extends { [key: string | symbol]: infer W }
+      ? ObjectAtom<T[K]>
+      : BaseAtom<T[K]>;
+  }
 }
 
 export class BaseAtom<T> extends ReadOnlyAtom<T> {
@@ -155,11 +194,38 @@ export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
   push(nextVal: T) {
     this._behavior$.next([...this._behavior$.getValue(), nextVal]);
   }
-
-  get(idx: number) {
-    return this.value()[idx];
-  }
 }
+//
+// export class ReadOnlyObjectAtom<
+//   T extends {
+//     [key in K]: V;
+//   },
+//   K extends string | number | symbol = keyof T,
+//   V = T[K]
+// > extends ReadOnlyAtom<T> {
+//   get(nextKey: K) {
+//     return this.value()[nextKey];
+//   }
+//
+//   select<K extends keyof T>(
+//     key: K
+//   ): T[K] extends (infer W)[]
+//     ? ArrayAtom<W>
+//     : T[K] extends { [key in infer L]?: infer W }
+//     ? ObjectAtom<T[K]>
+//     : BaseAtom<T> {
+//     const newObs = this._behavior$.pipe(
+//       distinctUntilKeyChanged(key),
+//       map((k) => k?.[key])
+//     );
+//     // Can't get typescript to recognize the types here so I'm cheating
+//     return Atom(newObs) as unknown as T[K] extends (infer W)[]
+//       ? ArrayAtom<W>
+//       : T[K] extends { [key in infer L]?: infer W }
+//       ? ObjectAtom<T[K]>
+//       : BaseAtom<T>;
+//   }
+// }
 
 export class ObjectAtom<
   T extends {
@@ -173,29 +239,6 @@ export class ObjectAtom<
       ...this._behavior$.getValue(),
       [nextKey]: nextValue,
     });
-  }
-
-  get(nextKey: K) {
-    return this.value()[nextKey];
-  }
-
-  select<K extends keyof T>(
-    key: K
-  ): T[K] extends (infer W)[]
-    ? ArrayAtom<W>
-    : T[K] extends { [key in infer L]?: infer W }
-    ? ObjectAtom<T[K]>
-    : BaseAtom<T> {
-    const newObs = this._behavior$.pipe(
-      distinctUntilKeyChanged(key),
-      map((k) => k?.[key])
-    );
-    // Can't get typescript to recognize the types here so I'm cheating
-    return Atom(newObs) as unknown as T[K] extends (infer W)[]
-      ? ArrayAtom<W>
-      : T[K] extends { [key in infer L]?: infer W }
-      ? ObjectAtom<T[K]>
-      : BaseAtom<T>;
   }
 }
 

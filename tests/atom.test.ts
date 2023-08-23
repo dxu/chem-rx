@@ -157,6 +157,51 @@ test("Test combine", () => {
   expect(combinedValue[2].name).toBe("c");
 });
 
+test("Test combine example", () => {
+  const pets$ = Atom<{ [name: string]: { type: "dog" | "cat"; age: number } }>({
+    spot: { type: "dog", age: 5 },
+    fido: { type: "dog", age: 3 },
+    tabby: { type: "cat", age: 12 },
+  });
+
+  const people$ = Atom<{ [name: string]: { pets: string[] } }>({
+    fred: { pets: [] },
+    mary: { pets: ["spot", "fido"] },
+    cam: { pets: ["tabby"] },
+  });
+
+  const mary$ = Atom.combine(pets$, people$.select("mary")).derive(
+    ([pets, mary]) => {
+      return {
+        ...mary,
+        pets: mary.pets.map((petName) => pets[petName]),
+      };
+    }
+  );
+  {
+    mary: {
+      pets: [
+        {
+          name: "spot",
+          type: "dog",
+          age: 5,
+        },
+      ];
+    }
+  }
+
+  const pets = mary$.select("pets").get(0);
+  expect(mary$.select("pets").value().length).toBe(2);
+  expect(mary$.select("pets").get(0)).toHaveProperty("type");
+  expect(mary$.select("pets").get(0)).toHaveProperty("age");
+  expect(mary$.select("pets").get(0).type).toBe("dog");
+  expect(mary$.select("pets").get(0).age).toBe(5);
+  expect(mary$.select("pets").get(1)).toHaveProperty("type");
+  expect(mary$.select("pets").get(1)).toHaveProperty("age");
+  expect(mary$.select("pets").get(1).type).toBe("dog");
+  expect(mary$.select("pets").get(1).age).toBe(3);
+});
+
 test("Test select (simple)", () => {
   enum TEST_ENUM {
     a = "weoifj",
