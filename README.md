@@ -97,18 +97,22 @@ atom$.set(4)
 console.log(squared$.value())
 ```
 
-Every derived atom is **read-only**. Because it is derived from another input,
-this prevents you from overriding the derived output value.
+Every derived atom is **read-only**. This prevents you from overriding the
+derived output value, since it is automatically derived from another input!
 
 ```
 // ERR: Property 'set' does not exist on type ReadOnlyAtom
 squared$.set(2)
 ```
 
-Behind the scenes, this uses
-[rxjs Observables](https://rxjs.dev/guide/operators) to enable reactivity. For
-more information on how to use rxjs with chem-rx, take a look at
-[Advanced Usage with `rxjs`](#advanced-usage-with-rxjs)
+You can optionally enforce `readOnly` on an atom at creation time if needed
+
+```
+const atom$ = Atom(3, true);
+
+// ERR: Property 'set' does not exist on type ReadOnlyAtom
+atom$.set(2)
+```
 
 ### Combining Atoms
 
@@ -136,16 +140,14 @@ const mary$ = Atom.combine(pets$, people$.select("mary")).derive(
   }
 );
 
+console.log(mary$.select('pets').value())
 /*
- * [
- *   {
- *     name: "spot",
- *     type: "dog",
- *     age: 5,
- *   },
- * ]
+ * [{
+ *   name: "spot",
+ *   type: "dog",
+ *   age: 5,
+ * }]
  */
-console.log(mary$.select('pets'))
 ```
 
 ### Subscribing to updates
@@ -285,8 +287,10 @@ Here are some common issues you might run into when starting out.
 
 ## Advanced Usage with `rxjs`
 
-Atom abstracts away the majority of Rx intentionally, to extract the most common
-patterns used when managing front-end data.
+Behind the scenes, `chem-rx` uses
+[rxjs Observables](https://rxjs.dev/guide/operators) to enable reactivity.
+`Atom` abstracts away the majority of Rx intentionally, to extract the most
+common patterns used when managing front-end data.
 
 If you're coming in with prior experience and are seeking more complex operators
 enabled by Rx, you're in luck, because every Atom is simply a wrapper around a
