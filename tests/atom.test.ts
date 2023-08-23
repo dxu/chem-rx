@@ -17,6 +17,15 @@ test("Base Atom values test", () => {
   expect(atom.value()).toBe("apro");
 });
 
+test("Test readonly", () => {
+  const atom = Atom({ a: 10 }, true);
+  expect(atom instanceof ReadOnlyAtom).toBe(true);
+  expect(atom instanceof BaseAtom).toBe(false);
+  expect(atom.get("a")).toBe(10);
+
+  expect(atom).not.toHaveProperty("set");
+});
+
 test("Object Atom values test", () => {
   const atom = Atom<{ [key: string]: string }>({
     firstKey: "firstValue",

@@ -275,10 +275,15 @@ export function Atom<T extends { [key: string]: T[keyof T] }>(
 // primitive type
 export function Atom<T>(value: T): BaseAtom<T>;
 
+// readonly type
+export function Atom<T>(value: T, readOnly?: boolean): ReadOnlyAtom<T>;
+
 // function definition
-export function Atom<T>(_value: T) {
+export function Atom<T>(_value: T, readOnly: boolean = false) {
   let atom;
-  if (Array.isArray(_value)) {
+  if (readOnly) {
+    atom = new ReadOnlyAtom(_value);
+  } else if (Array.isArray(_value)) {
     atom = new ArrayAtom<T>(_value); // For arrays
   } else if (typeof _value === "object" && _value !== null) {
     atom = new ObjectAtom<T>(_value); // For objects
