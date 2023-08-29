@@ -8,7 +8,8 @@
     "prebuild": "rimraf dist",
     "test": "jest",
     "clean": "rm -rf ./dist",
-    "build": "npm run prebuild && rollup -c"
+    "build": "pnpm run prebuild && rollup -c",
+    "bump": "pnpm run build && pnpm version patch"
   },
   "repository": {
     "type": "git",
