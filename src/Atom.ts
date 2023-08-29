@@ -14,8 +14,6 @@ export type AtomTuple<T> = {
   [K in keyof T]: ReadOnlyAtom<T[K]>;
 };
 
-// export class ReadOnlyAtom<T> {}
-
 export class ReadOnlyAtom<T> {
   _behavior$: BehaviorSubject<T>;
 
