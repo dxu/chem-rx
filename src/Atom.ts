@@ -138,19 +138,19 @@ export class ReadOnlyAtom<T> {
     this._fromObservableSubscription?.unsubscribe();
   }
 
-  get(
-    key: T extends (infer W)[]
-      ? number
-      : T extends { [key in keyof T]: infer W }
-      ? keyof T
-      : undefined
+  get<K extends keyof T>(
+    key: K
+    // key: T extends (infer W)[]
+    //   ? number
+    //   : T extends { [key in keyof T]: infer W }
+    //   ? keyof T
+    //   : undefined
   ): T extends (infer W)[]
     ? T[number]
     : T extends { [key in keyof T]: infer W }
     ? T[keyof T]
     : undefined {
     const val = this.value() as T;
-    // @ts-ignore Can't figure out this type so i'm REALLY cheating
     return val[key] as T extends (infer W)[]
       ? T[number]
       : T extends { [key in keyof T]: infer W }
