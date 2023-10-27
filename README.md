@@ -247,18 +247,18 @@ function Counter() {
         <button onClick={() => count$.set('inner', count + 2)}>one up</button> ...
 ```
 
-### hydrateAtoms
+### useHydrateAtoms
 
 With SSR, your atoms will likely need to be properly hydrated to prevent
-server/client mismatches. You can use `hydrateAtoms` as a simple solution for
+server/client mismatches. You can use `useHydrateAtoms` as a simple solution for
 seeding your client-side Atoms with the correct data.
 
 ```
-import { Atom, useAtom, hydrateAtoms } from 'chem-rx'
+import { Atom, useAtom, useHydrateAtoms } from 'chem-rx'
 
 const count$ = Atom(0)
 const CounterPage = ({ countFromServer }) => {
-  hydrateAtoms([[count$, countFromServer]])
+  useHydrateAtoms([[count$, countFromServer]])
   const count = useAtom(count$)
   // count would be the value of `countFromServer`, not 0.
 }
