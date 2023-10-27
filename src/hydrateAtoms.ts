@@ -1,7 +1,7 @@
-import { Atom } from "./Atom";
+import { BaseAtom } from "./Atom";
 
-export function hydrateAtoms(values: readonly [Atom<any>, any][]) {
+export function hydrateAtoms(values: readonly [BaseAtom<any>, any][]) {
   for (const [atom, value] of values) {
-    atom.push(value);
+    atom._behavior$.next(value);
   }
 }
