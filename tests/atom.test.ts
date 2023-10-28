@@ -79,6 +79,32 @@ test("Object Enum Atom test", () => {
   expect(atom.get(testEnum.second)).toBe("newSecondValue");
 });
 
+test("Nullable Object Enum Atom test", () => {
+  enum testEnum {
+    first,
+    second,
+  }
+  const a = {
+    [testEnum.first]: "firstValue",
+    [testEnum.second]: "secondValue",
+  };
+  const atom = Atom<{
+    [testEnum.first]: string;
+    [testEnum.second]: string;
+  }>();
+
+  // atom.push({
+  //   [testEnum.first]: "firstValue",
+  //   [testEnum.second]: "secondValue",
+  // });
+  expect(atom instanceof ObjectAtom).toBe(true);
+  expect(atom.get(testEnum.first)).toBe("firstValue");
+
+  expect(atom.get(testEnum.second)).toBe("secondValue");
+  atom.set(testEnum.second, "newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("newSecondValue");
+});
+
 test("Array Atom values test", () => {
   const atom = Atom<string[]>(["first"]);
   // this is not allowed

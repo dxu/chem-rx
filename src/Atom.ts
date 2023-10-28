@@ -243,35 +243,35 @@ export class ObjectAtom<
 // catch-all for developers
 // export type AnyAtom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
 
-// observable type (primitive)
-export function Atom<T>(
-  value: T extends { [key: string]: infer V } | any[] ? never : Observable<T>
-): BaseAtom<T>;
-
 // observable<array> type
 export function Atom<T extends any[]>(
-  value: Observable<T>
+  value?: Observable<T>
 ): ArrayAtom<T[number]>;
 
 // observable<object> type
 export function Atom<T>(
-  value: T extends {
+  value?: T extends {
     [key in keyof T]: infer V;
   }
     ? Observable<T>
     : never
 ): ObjectAtom<T>;
 
+// observable type (primitive)
+export function Atom<T>(
+  value?: T extends { [key: string]: infer V } | any[] ? never : Observable<T>
+): BaseAtom<T>;
+
 // array type
-export function Atom<T extends any[]>(value: T): ArrayAtom<T[number]>;
+export function Atom<T extends any[]>(value?: T): ArrayAtom<T[number]>;
 
 // object type
 export function Atom<T extends { [key: string]: T[keyof T] }>(
-  value: T
+  value?: T
 ): ObjectAtom<T>;
 
 // primitive type
-export function Atom<T>(value: T): BaseAtom<T>;
+export function Atom<T>(value?: T): BaseAtom<T>;
 
 // readonly type
 export function Atom<T>(value: T, readOnly?: boolean): ReadOnlyAtom<T>;
