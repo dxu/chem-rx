@@ -146,7 +146,7 @@ export class ReadOnlyAtom<T> {
     //   ? keyof T
     //   : undefined
   ): T extends (infer W)[]
-    ? T[number] | undefined
+    ? T[number]
     : T extends { [key in keyof T]: infer W }
     ? T[keyof T]
     : undefined {
@@ -160,11 +160,7 @@ export class ReadOnlyAtom<T> {
 
   select<K extends keyof T>(
     key: K
-  ): T[K] extends (infer W)[]
-    ? ArrayAtom<W>
-    : T[K] extends { [key: string | symbol]: infer W }
-    ? ObjectAtom<T[K]>
-    : BaseAtom<T[K]> {
+  ): T[K] extends (infer W)[] ? ArrayAtom<W> : BaseAtom<T[K]> {
     const newObs = this._behavior$.pipe(
       distinctUntilKeyChanged(key),
       map((k) => k?.[key])
@@ -172,8 +168,6 @@ export class ReadOnlyAtom<T> {
     // Can't get typescript to recognize the types here so I'm cheating
     return Atom(newObs) as unknown as T[K] extends (infer W)[]
       ? ArrayAtom<W>
-      : T[K] extends { [key: string | symbol]: infer W }
-      ? ObjectAtom<T[K]>
       : BaseAtom<T[K]>;
   }
 }
@@ -182,21 +176,51 @@ export class BaseAtom<T> extends ReadOnlyAtom<T> {
   set(nextVal: T) {
     this._behavior$.next(nextVal);
   }
+
+  setKeyValue(nextKey: keyof T, nextValue: T[keyof T]) {
+    this._behavior$.next({
+      ...this._behavior$.getValue(),
+      [nextKey]: nextValue,
+    });
+  }
 }
 
-export class NullableBaseAtom<T> extends BaseAtom<T | null> {
+export class NullableBaseAtom<T> extends BaseAtom<T> {
   constructor(_value?: T | Observable<T>) {
-    if (_value) {
+    if (_value != null) {
       super(_value);
     } else {
-      super(null);
+      // @ts-ignore
+      super(undefined);
     }
+  }
+
+  // @ts-ignore
+  get<K extends keyof T>(
+    key: K
+    // key: T extends (infer W)[]
+    //   ? number
+    //   : T extends { [key in keyof T]: infer W }
+    //   ? keyof T
+    //   : undefined
+  ):
+    | (T extends (infer W)[]
+        ? T[number]
+        : T extends { [key in keyof T]: infer W }
+        ? T[keyof T]
+        : undefined)
+    | undefined {
+    return super.get(key);
   }
 }
 
 export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
-  constructor(initialValue: T[]) {
-    super(initialValue);
+  constructor(initialValue?: T[]) {
+    if (initialValue) {
+      super(initialValue);
+    } else {
+      super([]);
+    }
   }
 
   push(nextVal: T) {
@@ -235,39 +259,23 @@ export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
 //       : BaseAtom<T>;
 //   }
 // }
-
-export class ObjectAtom<
-  T extends
-    | {
-        [key in K]: V;
-      }
-    | null,
-  K extends string | number | symbol = keyof T,
-  V = T extends { [key in K]: infer W } ? T[K] : null
-> extends ReadOnlyAtom<T> {
-  set(nextKey: K, nextValue: V) {
-    this._behavior$.next({
-      ...this._behavior$.getValue(),
-      [nextKey]: nextValue,
-    });
-  }
-}
-
-export class NullableObjectAtom<
-  T extends {
-    [key in K]: V;
-  },
-  K extends string | number | symbol = keyof T,
-  V = T[K]
-> extends ObjectAtom<T | null> {
-  constructor(_value?: T | Observable<T>) {
-    if (_value) {
-      super(_value);
-    } else {
-      super(null);
-    }
-  }
-}
+//
+// export class ObjectAtom<
+//   T extends
+//     | {
+//         [key in K]: V;
+//       }
+//     | null,
+//   K extends string | number | symbol = keyof T,
+//   V = T extends { [key in K]: infer W } ? T[K] : null
+// > extends ReadOnlyAtom<T> {
+//   set(nextKey: K, nextValue: V) {
+//     this._behavior$.next({
+//       ...this._behavior$.getValue(),
+//       [nextKey]: nextValue,
+//     });
+//   }
+// }
 
 // catch-all for developers
 // export type AnyAtom<T> = BaseAtom<T> | ArrayAtom<T> | ObjectAtom<T>;
@@ -279,33 +287,50 @@ export function Atom<T extends any[]>(
 
 // observable<object> type
 export function Atom<T>(
+  value: T extends {
+    [key in keyof T]: infer V;
+  }
+    ? Observable<T>
+    : never
+): BaseAtom<T>;
+
+// nullable observable<object> type
+export function Atom<T>(
   value?: T extends {
     [key in keyof T]: infer V;
   }
     ? Observable<T>
     : never
-): NullableObjectAtom<T>;
+): NullableBaseAtom<T>;
 
 // observable type (primitive)
 export function Atom<T>(
   value?: T extends { [key: string]: infer V } | any[] ? never : Observable<T>
 ): BaseAtom<T>;
 
+// nullable observable type (primitive)
+export function Atom<T>(
+  value?: T extends { [key: string]: infer V } | any[] ? never : Observable<T>
+): NullableBaseAtom<T>;
+
 // array type
 export function Atom<T extends any[]>(value?: T): ArrayAtom<T[number]>;
 
 // object type
 export function Atom<T extends { [key: string]: T[keyof T] }>(
-  value?: T
-): ObjectAtom<T>;
-
-// object type
-export function Atom<T extends { [key: string]: T[keyof T] }>(
   value: T
-): ObjectAtom<T>;
+): BaseAtom<T>;
+
+// nullable (unitialized) object type
+export function Atom<T extends { [key: string]: T[keyof T] }>(
+  value?: T
+): NullableBaseAtom<T>;
 
 // primitive type
-export function Atom<T>(value?: T): BaseAtom<T>;
+export function Atom<T>(value: T): BaseAtom<T>;
+
+// nullable (unitialized) primitive type
+export function Atom<T>(value?: T): NullableBaseAtom<T>;
 
 // readonly type
 export function Atom<T>(value: T, readOnly?: boolean): ReadOnlyAtom<T>;
@@ -317,8 +342,8 @@ export function Atom<T>(_value: T, readOnly: boolean = false) {
     atom = new ReadOnlyAtom(_value);
   } else if (Array.isArray(_value)) {
     atom = new ArrayAtom<T>(_value); // For arrays
-  } else if (typeof _value === "object" && _value !== null) {
-    atom = new ObjectAtom<T>(_value); // For objects
+  } else if (_value == null) {
+    atom = new NullableBaseAtom();
   } else {
     atom = new BaseAtom(_value); // For other types
   }

@@ -1,10 +1,4 @@
-import {
-  ArrayAtom,
-  Atom,
-  BaseAtom,
-  ObjectAtom,
-  ReadOnlyAtom,
-} from "../src/Atom";
+import { ArrayAtom, Atom, BaseAtom, ReadOnlyAtom } from "../src/Atom";
 import { BehaviorSubject, map } from "rxjs";
 
 test("Base Atom values test", () => {
@@ -31,16 +25,16 @@ test("Object Atom values test", () => {
     firstKey: "firstValue",
     secondKey: "secondValue",
   });
-  expect(atom instanceof ObjectAtom).toBe(true);
+  expect(atom instanceof BaseAtom).toBe(true);
   expect(atom.value()["firstKey"]).toBe("firstValue");
 
   expect(atom.value()["secondKey"]).toBe("secondValue");
-  atom.set("secondKey", "newSecondValue");
+  atom.setKeyValue("secondKey", "newSecondValue");
   expect(atom.value()["secondKey"]).toBe("newSecondValue");
 
   expect(atom.value()["thirdKey"]).toBeUndefined();
   expect(atom.value()).not.toHaveProperty("thirdKey");
-  atom.set("thirdKey", "thirdValue");
+  atom.setKeyValue("thirdKey", "thirdValue");
   expect(atom.value()["thirdKey"]).toBe("thirdValue");
 });
 
@@ -49,16 +43,19 @@ test("Object Atom get function test", () => {
     firstKey: "firstValue",
     secondKey: "secondValue",
   });
-  expect(atom instanceof ObjectAtom).toBe(true);
-  expect(atom.get("firstKey")).toBe("firstValue");
+
+  const a = atom.get("firsKey");
+
+  expect(atom instanceof BaseAtom).toBe(true);
+  expect(atom.get("firsKey")).toBe("firstValue");
 
   expect(atom.get("secondKey")).toBe("secondValue");
-  atom.set("secondKey", "newSecondValue");
+  atom.setKeyValue("secondKey", "newSecondValue");
   expect(atom.get("secondKey")).toBe("newSecondValue");
 
   expect(atom.get("thirdKey")).toBeUndefined();
   expect(atom.value()).not.toHaveProperty("thirdKey");
-  atom.set("thirdKey", "thirdValue");
+  atom.setKeyValue("thirdKey", "thirdValue");
   expect(atom.get("thirdKey")).toBe("thirdValue");
 });
 
@@ -76,15 +73,15 @@ test("Object Enum Atom test", () => {
   const kkk = atom.get(testEnum.first);
   kkk.toString();
 
-  expect(atom instanceof ObjectAtom).toBe(true);
+  expect(atom instanceof BaseAtom).toBe(true);
   expect(atom.get(testEnum.first)).toBe("firstValue");
 
   expect(atom.get(testEnum.second)).toBe("secondValue");
-  atom.set(testEnum.second, "newSecondValue");
+  atom.setKeyValue(testEnum.second, "newSecondValue");
   expect(atom.get(testEnum.second)).toBe("newSecondValue");
 });
 
-test("INitialized Object  Atom test", () => {
+test("Optional keys Object Atom test", () => {
   enum testEnum {
     first,
     second,
@@ -97,15 +94,15 @@ test("INitialized Object  Atom test", () => {
     [testEnum.second]: "secondValue",
   });
 
-  // this should always be defined as a string
   const kkk = atom.get(testEnum.first);
+  // @ts-expect-error this should be possibly undefined
   kkk.toString();
 
-  expect(atom instanceof ObjectAtom).toBe(true);
+  expect(atom instanceof BaseAtom).toBe(true);
   expect(atom.get(testEnum.first)).toBe("firstValue");
 
   expect(atom.get(testEnum.second)).toBe("secondValue");
-  atom.set(testEnum.second, "newSecondValue");
+  atom.setKeyValue(testEnum.second, "newSecondValue");
   expect(atom.get(testEnum.second)).toBe("newSecondValue");
 });
 
@@ -135,11 +132,11 @@ test("Uninitialized Object Enum Atom test", () => {
   //   [testEnum.first]: "firstValue",
   //   [testEnum.second]: "secondValue",
   // });
-  expect(atom instanceof ObjectAtom).toBe(true);
+  expect(atom instanceof BaseAtom).toBe(true);
   expect(atom.get(testEnum.first)).toBe("firstValue");
 
   expect(atom.get(testEnum.second)).toBe("secondValue");
-  atom.set(testEnum.second, "newSecondValue");
+  atom.setKeyValue(testEnum.second, "newSecondValue");
   expect(atom.get(testEnum.second)).toBe("newSecondValue");
 });
 
@@ -147,7 +144,6 @@ test("Array Atom values test", () => {
   const atom = Atom<string[]>(["first"]);
   const kkk = atom.get(10);
 
-  // @ts-expect-error this should throw a type error
   // because it should be possibly undefined
   kkk.toString();
 
@@ -269,6 +265,11 @@ test("Test combine example", () => {
     }
   }
 
+  const a: number[] = [1, 3, 4, 5];
+  const b = a[10];
+
+  b.toFixed();
+
   const pets = mary$.select("pets").get(0);
   expect(mary$.select("pets").value().length).toBe(2);
   expect(mary$.select("pets").get(0)).toHaveProperty("type");
@@ -321,7 +322,7 @@ test("Test select (simple)", () => {
     c: { c: "c" },
   });
 
-  const selectedString: ObjectAtom<{ [key: string]: string }> =
+  const selectedString: BaseAtom<{ [key: string]: string }> =
     stringData.select("b");
 
   const normalizedOptionalStringData = Atom<{
@@ -350,9 +351,9 @@ test("Test select (simple)", () => {
 
   const sel3 = objObsAtom2.select("a");
 
-  expect(selected instanceof ObjectAtom).toBe(true);
+  expect(selected instanceof BaseAtom).toBe(true);
 
-  expect(selected instanceof ObjectAtom).toBe(true);
+  expect(selected instanceof BaseAtom).toBe(true);
 
   // const combined = Atom.combine(normalizedData, ids).derive(([normed, ids]) => {
   //   return ids.map((id) => normed[id]);
