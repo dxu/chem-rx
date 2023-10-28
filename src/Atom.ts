@@ -212,6 +212,14 @@ export class NullableBaseAtom<T> extends BaseAtom<T> {
     | undefined {
     return super.get(key);
   }
+
+  // @ts-ignore
+  select<K extends keyof T>(
+    key: K
+  ): T extends (infer W)[] ? ArrayAtom<W> : NullableBaseAtom<T[K]> {
+    // @ts-ignore
+    return super.select(key);
+  }
 }
 
 export class ArrayAtom<T> extends BaseAtom<T[]> {

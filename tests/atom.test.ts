@@ -413,6 +413,51 @@ test("Test select (nested objects)", () => {
   expect(stacySchool.get("graduation")).toBe(2014);
 });
 
+test("Test select nullable object", () => {
+  const seedData = {
+    stacy: {
+      nickname: "stace",
+      education: {
+        school: "Penn",
+        graduation: 2014,
+      },
+    },
+    annie: {
+      nickname: "ann",
+      education: {
+        school: "Brown",
+        graduation: 2015,
+      },
+    },
+    prabhu: {
+      nickname: "prab",
+      education: {
+        school: "MIT",
+        graduation: 2016,
+      },
+    },
+  };
+  const nestedData = Atom<{
+    [key: string]: {
+      nickname: string;
+      education: {
+        school: string;
+        graduation: number;
+      };
+    };
+  }>();
+
+  const newVal = nestedData.select("stacy");
+
+  nestedData.next(seedData);
+  const stacy = nestedData.select("stacy");
+  const stacySchool = nestedData.select("stacy").select("education");
+
+  expect(stacy.get("nickname")).toBe("stace");
+  expect(stacySchool.get("school")).toBe("Penn");
+  expect(stacySchool.get("graduation")).toBe(2014);
+});
+
 /*
  * TODO:
  * - test react hooks
