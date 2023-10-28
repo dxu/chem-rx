@@ -6,7 +6,7 @@ test("Base Atom values test", () => {
   expect(atom instanceof BaseAtom).toBe(true);
   expect(atom.value()).toBe("aweofij");
 
-  atom.set("apro");
+  atom.next("apro");
 
   expect(atom.value()).toBe("apro");
 });
@@ -15,7 +15,7 @@ test("Test readonly", () => {
   const atom = Atom({ a: 10 }, true);
   expect(atom instanceof ReadOnlyAtom).toBe(true);
   expect(atom instanceof BaseAtom).toBe(false);
-  expect(atom.getKV("a")).toBe(10);
+  expect(atom.get("a")).toBe(10);
 
   expect(atom).not.toHaveProperty("set");
 });
@@ -29,12 +29,12 @@ test("Object Atom values test", () => {
   expect(atom.value()["firstKey"]).toBe("firstValue");
 
   expect(atom.value()["secondKey"]).toBe("secondValue");
-  atom.setKV("secondKey", "newSecondValue");
+  atom.set("secondKey", "newSecondValue");
   expect(atom.value()["secondKey"]).toBe("newSecondValue");
 
   expect(atom.value()["thirdKey"]).toBeUndefined();
   expect(atom.value()).not.toHaveProperty("thirdKey");
-  atom.setKV("thirdKey", "thirdValue");
+  atom.set("thirdKey", "thirdValue");
   expect(atom.value()["thirdKey"]).toBe("thirdValue");
 });
 
@@ -44,19 +44,19 @@ test("Object Atom get function test", () => {
     secondKey: "secondValue",
   });
 
-  expect(atom.getKV("firey")).toBe(undefined);
+  expect(atom.get("firey")).toBe(undefined);
 
   expect(atom instanceof BaseAtom).toBe(true);
-  expect(atom.getKV("firstKey")).toBe("firstValue");
+  expect(atom.get("firstKey")).toBe("firstValue");
 
-  expect(atom.getKV("secondKey")).toBe("secondValue");
-  atom.setKV("secondKey", "newSecondValue");
-  expect(atom.getKV("secondKey")).toBe("newSecondValue");
+  expect(atom.get("secondKey")).toBe("secondValue");
+  atom.set("secondKey", "newSecondValue");
+  expect(atom.get("secondKey")).toBe("newSecondValue");
 
-  expect(atom.getKV("thirdKey")).toBeUndefined();
+  expect(atom.get("thirdKey")).toBeUndefined();
   expect(atom.value()).not.toHaveProperty("thirdKey");
-  atom.setKV("thirdKey", "thirdValue");
-  expect(atom.getKV("thirdKey")).toBe("thirdValue");
+  atom.set("thirdKey", "thirdValue");
+  expect(atom.get("thirdKey")).toBe("thirdValue");
 });
 
 test("Object Enum Atom test", () => {
@@ -70,15 +70,15 @@ test("Object Enum Atom test", () => {
   });
 
   // this should always be defined as a string
-  const kkk = atom.getKV(testEnum.first);
+  const kkk = atom.get(testEnum.first);
   kkk.toString();
 
   expect(atom instanceof BaseAtom).toBe(true);
-  expect(atom.getKV(testEnum.first)).toBe("firstValue");
+  expect(atom.get(testEnum.first)).toBe("firstValue");
 
-  expect(atom.getKV(testEnum.second)).toBe("secondValue");
-  atom.setKV(testEnum.second, "newSecondValue");
-  expect(atom.getKV(testEnum.second)).toBe("newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("secondValue");
+  atom.set(testEnum.second, "newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("newSecondValue");
 });
 
 test("Optional keys Object Atom test", () => {
@@ -94,16 +94,16 @@ test("Optional keys Object Atom test", () => {
     [testEnum.second]: "secondValue",
   });
 
-  const kkk = atom.getKV(testEnum.first);
+  const kkk = atom.get(testEnum.first);
   // @ts-expect-error this should be possibly undefined
   kkk.toString();
 
   expect(atom instanceof BaseAtom).toBe(true);
-  expect(atom.getKV(testEnum.first)).toBe("firstValue");
+  expect(atom.get(testEnum.first)).toBe("firstValue");
 
-  expect(atom.getKV(testEnum.second)).toBe("secondValue");
-  atom.setKV(testEnum.second, "newSecondValue");
-  expect(atom.getKV(testEnum.second)).toBe("newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("secondValue");
+  atom.set(testEnum.second, "newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("newSecondValue");
 });
 
 test("Uninitialized Object Enum Atom test", () => {
@@ -120,7 +120,7 @@ test("Uninitialized Object Enum Atom test", () => {
     [testEnum.second]: string;
   }>();
 
-  const kkk = atom.getKV(testEnum.first);
+  const kkk = atom.get(testEnum.first);
   // this should be possibly undefined at this point,
   // so there should lbe type safety here
   expect(() => {
@@ -135,20 +135,20 @@ test("Uninitialized Object Enum Atom test", () => {
   // });
   expect(atom instanceof BaseAtom).toBe(true);
 
-  expect(atom.getKV(testEnum.first)).toBe(undefined);
-  expect(atom.getKV(testEnum.second)).toBe(undefined);
-  atom.set(seedValue);
-  expect(atom.getKV(testEnum.first)).toBe("firstValue");
+  expect(atom.get(testEnum.first)).toBe(undefined);
+  expect(atom.get(testEnum.second)).toBe(undefined);
+  atom.next(seedValue);
+  expect(atom.get(testEnum.first)).toBe("firstValue");
 
-  expect(atom.getKV(testEnum.second)).toBe("secondValue");
-  atom.setKV(testEnum.second, "newSecondValue");
-  expect(atom.getKV(testEnum.second)).toBe("newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("secondValue");
+  atom.set(testEnum.second, "newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("newSecondValue");
 });
 
 test("Array Atom values test", () => {
   const atom = Atom<string[]>(["first"]);
 
-  expect(atom.getKV(10)).toBe(undefined);
+  expect(atom.get(10)).toBe(undefined);
 
   // this is not allowed
   // atom.push(1);
@@ -166,11 +166,11 @@ test("Array Atom get index test", () => {
 
   expect(atom instanceof ArrayAtom).toBe(true);
   expect(atom.value().length).toBe(1);
-  expect(atom.getKV(0)).toBe("first");
+  expect(atom.get(0)).toBe("first");
 
   atom.push("second");
   expect(atom.value().length).toBe(2);
-  expect(atom.getKV(1)).toBe("second");
+  expect(atom.get(1)).toBe("second");
 });
 
 test("Test native pipe", () => {
@@ -208,7 +208,7 @@ test("Test derive update", () => {
 
   expect(derivedAtom.value()).toBe(9);
 
-  atom.set(4);
+  atom.next(4);
   expect(derivedAtom.value()).toBe(16);
 });
 
@@ -271,16 +271,16 @@ test("Test combine example", () => {
   const a: number[] = [1, 3, 4, 5];
   const b = a[10];
 
-  const pets = mary$.select("pets").getKV(0);
+  const pets = mary$.select("pets").get(0);
   expect(mary$.select("pets").value().length).toBe(2);
-  expect(mary$.select("pets").getKV(0)).toHaveProperty("type");
-  expect(mary$.select("pets").getKV(0)).toHaveProperty("age");
-  expect(mary$.select("pets").getKV(0).type).toBe("dog");
-  expect(mary$.select("pets").getKV(0).age).toBe(5);
-  expect(mary$.select("pets").getKV(1)).toHaveProperty("type");
-  expect(mary$.select("pets").getKV(1)).toHaveProperty("age");
-  expect(mary$.select("pets").getKV(1).type).toBe("dog");
-  expect(mary$.select("pets").getKV(1).age).toBe(3);
+  expect(mary$.select("pets").get(0)).toHaveProperty("type");
+  expect(mary$.select("pets").get(0)).toHaveProperty("age");
+  expect(mary$.select("pets").get(0).type).toBe("dog");
+  expect(mary$.select("pets").get(0).age).toBe(5);
+  expect(mary$.select("pets").get(1)).toHaveProperty("type");
+  expect(mary$.select("pets").get(1)).toHaveProperty("age");
+  expect(mary$.select("pets").get(1).type).toBe("dog");
+  expect(mary$.select("pets").get(1).age).toBe(3);
 });
 
 test("Test select (simple)", () => {
@@ -408,9 +408,9 @@ test("Test select (nested objects)", () => {
   const stacy = nestedData.select("stacy");
   const stacySchool = nestedData.select("stacy").select("education");
 
-  expect(stacy.getKV("nickname")).toBe("stace");
-  expect(stacySchool.getKV("school")).toBe("Penn");
-  expect(stacySchool.getKV("graduation")).toBe(2014);
+  expect(stacy.get("nickname")).toBe("stace");
+  expect(stacySchool.get("school")).toBe("Penn");
+  expect(stacySchool.get("graduation")).toBe(2014);
 });
 
 /*

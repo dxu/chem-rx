@@ -138,7 +138,7 @@ export class ReadOnlyAtom<T> {
     this._fromObservableSubscription?.unsubscribe();
   }
 
-  getKV<K extends keyof T>(
+  get<K extends keyof T>(
     key: K
     // key: T extends (infer W)[]
     //   ? number
@@ -173,11 +173,11 @@ export class ReadOnlyAtom<T> {
 }
 
 export class BaseAtom<T> extends ReadOnlyAtom<T> {
-  set(nextVal: T) {
+  next(nextVal: T) {
     this._behavior$.next(nextVal);
   }
 
-  setKV(nextKey: keyof T, nextValue: T[keyof T]) {
+  set(nextKey: keyof T, nextValue: T[keyof T]) {
     this._behavior$.next({
       ...this._behavior$.getValue(),
       [nextKey]: nextValue,
@@ -196,7 +196,7 @@ export class NullableBaseAtom<T> extends BaseAtom<T> {
   }
 
   // @ts-ignore
-  getKV<K extends keyof T>(
+  get<K extends keyof T>(
     key: K
     // key: T extends (infer W)[]
     //   ? number
@@ -210,7 +210,7 @@ export class NullableBaseAtom<T> extends BaseAtom<T> {
         ? T[keyof T]
         : undefined)
     | undefined {
-    return super.getKV(key);
+    return super.get(key);
   }
 }
 
