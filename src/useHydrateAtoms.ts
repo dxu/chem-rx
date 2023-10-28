@@ -1,14 +1,13 @@
 import { useEffect } from "react";
-import { BaseAtom } from "./Atom";
+import { BaseAtom, ReadOnlyAtom } from "./Atom";
 
-export function useHydrateAtoms(values: readonly [BaseAtom<any>, any][]) {
-  useEffect(() => {
-    hydrateAtoms(values);
-  }, []);
-}
+const hydratedAtomsSet: WeakSet<ReadOnlyAtom<any>> = new WeakSet();
 
 export function hydrateAtoms(values: readonly [BaseAtom<any>, any][]) {
   for (const [atom, value] of values) {
-    atom._behavior$.next(value);
+    if (!hydratedAtomsSet.has(atom)) {
+      hydratedAtomsSet.add(atom);
+      atom._behavior$.next(value);
+    }
   }
 }
