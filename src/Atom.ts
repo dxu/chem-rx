@@ -1,6 +1,7 @@
 import {
   BehaviorSubject,
   combineLatest,
+  distinctUntilChanged,
   distinctUntilKeyChanged,
   isObservable,
   map,
@@ -153,10 +154,20 @@ export class ReadOnlyAtom<T> {
   select<K extends keyof T>(
     key: K
   ): T[K] extends (infer W)[] ? ArrayAtom<W> : BaseAtom<T[K]> {
+    // console.log("key", key);
     const newObs = this._behavior$.pipe(
-      distinctUntilKeyChanged(key),
-      map((k) => k?.[key])
+      distinctUntilChanged((a, b) => {
+        if (a === b) return true;
+        if (a && b && a[key] === b[key]) return true;
+        return false;
+      }),
+      map((k) => {
+        // console.log("insideee", k, key);
+
+        return k?.[key];
+      })
     );
+    // console.log("obs", newObs);
     // Can't get typescript to recognize the types here so I'm cheating
     return Atom(newObs) as unknown as T[K] extends (infer W)[]
       ? ArrayAtom<W>
