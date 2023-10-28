@@ -449,7 +449,8 @@ test("Test select nullable object", () => {
     };
   }>();
 
-  // const newVal = nestedData.select("stacy");
+  // TODO: This errors
+  const newVal = nestedData.select("stacy");
 
   nestedData.next(seedData);
   const stacy = nestedData.select("stacy");
