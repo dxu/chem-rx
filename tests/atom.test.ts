@@ -71,6 +71,11 @@ test("Object Enum Atom test", () => {
     [testEnum.first]: "firstValue",
     [testEnum.second]: "secondValue",
   });
+
+  // this should always be defined as a string
+  const kkk = atom.get(testEnum.first);
+  kkk.toString();
+
   expect(atom instanceof ObjectAtom).toBe(true);
   expect(atom.get(testEnum.first)).toBe("firstValue");
 
@@ -79,7 +84,32 @@ test("Object Enum Atom test", () => {
   expect(atom.get(testEnum.second)).toBe("newSecondValue");
 });
 
-test("Nullable Object Enum Atom test", () => {
+test("INitialized Object  Atom test", () => {
+  enum testEnum {
+    first,
+    second,
+  }
+  const atom = Atom<{
+    [testEnum.first]?: string;
+    [testEnum.second]?: string;
+  }>({
+    [testEnum.first]: "firstValue",
+    [testEnum.second]: "secondValue",
+  });
+
+  // this should always be defined as a string
+  const kkk = atom.get(testEnum.first);
+  kkk.toString();
+
+  expect(atom instanceof ObjectAtom).toBe(true);
+  expect(atom.get(testEnum.first)).toBe("firstValue");
+
+  expect(atom.get(testEnum.second)).toBe("secondValue");
+  atom.set(testEnum.second, "newSecondValue");
+  expect(atom.get(testEnum.second)).toBe("newSecondValue");
+});
+
+test("Uninitialized Object Enum Atom test", () => {
   enum testEnum {
     first,
     second,
@@ -92,6 +122,14 @@ test("Nullable Object Enum Atom test", () => {
     [testEnum.first]: string;
     [testEnum.second]: string;
   }>();
+
+  // this should be possibly undefined at this point,
+  // so there should lbe type safety here
+  const kkk = atom.get(testEnum.first);
+
+  // @ts-expect-error this should throw a type error
+  // because it should be possibly undefined
+  kkk.toString();
 
   // atom.push({
   //   [testEnum.first]: "firstValue",
@@ -107,6 +145,12 @@ test("Nullable Object Enum Atom test", () => {
 
 test("Array Atom values test", () => {
   const atom = Atom<string[]>(["first"]);
+  const kkk = atom.get(10);
+
+  // @ts-expect-error this should throw a type error
+  // because it should be possibly undefined
+  kkk.toString();
+
   // this is not allowed
   // atom.push(1);
   expect(atom instanceof ArrayAtom).toBe(true);

@@ -146,12 +146,12 @@ export class ReadOnlyAtom<T> {
     //   ? keyof T
     //   : undefined
   ): T extends (infer W)[]
-    ? T[number]
+    ? T[number] | undefined
     : T extends { [key in keyof T]: infer W }
     ? T[keyof T]
     : undefined {
     const val = this.value() as T;
-    return val[key] as T extends (infer W)[]
+    return val?.[key] as T extends (infer W)[]
       ? T[number]
       : T extends { [key in keyof T]: infer W }
       ? T[keyof T]
@@ -184,6 +184,16 @@ export class BaseAtom<T> extends ReadOnlyAtom<T> {
   }
 }
 
+export class NullableBaseAtom<T> extends BaseAtom<T | null> {
+  constructor(_value?: T | Observable<T>) {
+    if (_value) {
+      super(_value);
+    } else {
+      super(null);
+    }
+  }
+}
+
 export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
   constructor(initialValue: T[]) {
     super(initialValue);
@@ -193,6 +203,7 @@ export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
     this._behavior$.next([...this._behavior$.getValue(), nextVal]);
   }
 }
+
 //
 // export class ReadOnlyObjectAtom<
 //   T extends {
@@ -226,17 +237,35 @@ export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
 // }
 
 export class ObjectAtom<
-  T extends {
-    [key in K]: V;
-  },
+  T extends
+    | {
+        [key in K]: V;
+      }
+    | null,
   K extends string | number | symbol = keyof T,
-  V = T[K]
+  V = T extends { [key in K]: infer W } ? T[K] : null
 > extends ReadOnlyAtom<T> {
   set(nextKey: K, nextValue: V) {
     this._behavior$.next({
       ...this._behavior$.getValue(),
       [nextKey]: nextValue,
     });
+  }
+}
+
+export class NullableObjectAtom<
+  T extends {
+    [key in K]: V;
+  },
+  K extends string | number | symbol = keyof T,
+  V = T[K]
+> extends ObjectAtom<T | null> {
+  constructor(_value?: T | Observable<T>) {
+    if (_value) {
+      super(_value);
+    } else {
+      super(null);
+    }
   }
 }
 
@@ -255,7 +284,7 @@ export function Atom<T>(
   }
     ? Observable<T>
     : never
-): ObjectAtom<T>;
+): NullableObjectAtom<T>;
 
 // observable type (primitive)
 export function Atom<T>(
@@ -268,6 +297,11 @@ export function Atom<T extends any[]>(value?: T): ArrayAtom<T[number]>;
 // object type
 export function Atom<T extends { [key: string]: T[keyof T] }>(
   value?: T
+): ObjectAtom<T>;
+
+// object type
+export function Atom<T extends { [key: string]: T[keyof T] }>(
+  value: T
 ): ObjectAtom<T>;
 
 // primitive type
