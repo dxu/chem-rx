@@ -408,6 +408,8 @@ test("Test select (nested objects)", () => {
   const stacy = nestedData.select("stacy");
   const stacySchool = nestedData.select("stacy").select("education");
 
+  const nickname = stacy.get("nickname");
+  const education = stacy.get("education");
   expect(stacy.get("nickname")).toBe("stace");
   expect(stacySchool.get("school")).toBe("Penn");
   expect(stacySchool.get("graduation")).toBe(2014);
@@ -447,7 +449,7 @@ test("Test select nullable object", () => {
     };
   }>();
 
-  const newVal = nestedData.select("stacy");
+  // const newVal = nestedData.select("stacy");
 
   nestedData.next(seedData);
   const stacy = nestedData.select("stacy");

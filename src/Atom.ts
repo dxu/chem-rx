@@ -145,17 +145,9 @@ export class ReadOnlyAtom<T> {
     //   : T extends { [key in keyof T]: infer W }
     //   ? keyof T
     //   : undefined
-  ): T extends (infer W)[]
-    ? T[number]
-    : T extends { [key in keyof T]: infer W }
-    ? T[keyof T]
-    : undefined {
+  ): T extends (infer W)[] ? T[number] : T[K] {
     const val = this.value() as T;
-    return val?.[key] as T extends (infer W)[]
-      ? T[number]
-      : T extends { [key in keyof T]: infer W }
-      ? T[keyof T]
-      : undefined;
+    return val?.[key] as T extends (infer W)[] ? T[number] : T[K];
   }
 
   select<K extends keyof T>(
@@ -203,13 +195,7 @@ export class NullableBaseAtom<T> extends BaseAtom<T> {
     //   : T extends { [key in keyof T]: infer W }
     //   ? keyof T
     //   : undefined
-  ):
-    | (T extends (infer W)[]
-        ? T[number]
-        : T extends { [key in keyof T]: infer W }
-        ? T[keyof T]
-        : undefined)
-    | undefined {
+  ): (T extends (infer W)[] ? T[number] : T[K]) | undefined {
     return super.get(key);
   }
 
