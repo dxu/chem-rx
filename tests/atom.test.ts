@@ -44,10 +44,10 @@ test("Object Atom get function test", () => {
     secondKey: "secondValue",
   });
 
-  const a = atom.get("firsKey");
+  expect(atom.get("firey")).toBe(undefined);
 
   expect(atom instanceof BaseAtom).toBe(true);
-  expect(atom.get("firsKey")).toBe("firstValue");
+  expect(atom.get("firstKey")).toBe("firstValue");
 
   expect(atom.get("secondKey")).toBe("secondValue");
   atom.setKeyValue("secondKey", "newSecondValue");
@@ -111,7 +111,7 @@ test("Uninitialized Object Enum Atom test", () => {
     first,
     second,
   }
-  const a = {
+  const seedValue = {
     [testEnum.first]: "firstValue",
     [testEnum.second]: "secondValue",
   };
@@ -120,19 +120,24 @@ test("Uninitialized Object Enum Atom test", () => {
     [testEnum.second]: string;
   }>();
 
+  const kkk = atom.get(testEnum.first);
   // this should be possibly undefined at this point,
   // so there should lbe type safety here
-  const kkk = atom.get(testEnum.first);
-
-  // @ts-expect-error this should throw a type error
-  // because it should be possibly undefined
-  kkk.toString();
+  expect(() => {
+    // @ts-expect-error this should throw a type error
+    // because it should be possibly undefined
+    kkk.toString();
+  }).toThrow();
 
   // atom.push({
   //   [testEnum.first]: "firstValue",
   //   [testEnum.second]: "secondValue",
   // });
   expect(atom instanceof BaseAtom).toBe(true);
+
+  expect(atom.get(testEnum.first)).toBe(undefined);
+  expect(atom.get(testEnum.second)).toBe(undefined);
+  atom.set(seedValue);
   expect(atom.get(testEnum.first)).toBe("firstValue");
 
   expect(atom.get(testEnum.second)).toBe("secondValue");
@@ -142,10 +147,8 @@ test("Uninitialized Object Enum Atom test", () => {
 
 test("Array Atom values test", () => {
   const atom = Atom<string[]>(["first"]);
-  const kkk = atom.get(10);
 
-  // because it should be possibly undefined
-  kkk.toString();
+  expect(atom.get(10)).toBe(undefined);
 
   // this is not allowed
   // atom.push(1);
@@ -267,8 +270,6 @@ test("Test combine example", () => {
 
   const a: number[] = [1, 3, 4, 5];
   const b = a[10];
-
-  b.toFixed();
 
   const pets = mary$.select("pets").get(0);
   expect(mary$.select("pets").value().length).toBe(2);
