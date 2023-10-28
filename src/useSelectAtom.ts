@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BaseAtom } from "./Atom";
+import { BaseAtom, NullableBaseAtom } from "./Atom";
 
 export function useSelectAtom<
   T extends {
@@ -7,7 +7,7 @@ export function useSelectAtom<
   },
   K extends keyof T,
   V = T[K]
->(atom: BaseAtom<T>, key: K): T[K] {
+>(atom: NullableBaseAtom<T> | BaseAtom<T>, key: K): T[K] {
   const [value, setValue] = useState<T[K]>(atom.get(key)!);
 
   useEffect(() => {
