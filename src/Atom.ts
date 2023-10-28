@@ -214,7 +214,7 @@ export class NullableBaseAtom<T> extends BaseAtom<T> {
   }
 }
 
-export class ArrayAtom<T> extends ReadOnlyAtom<T[]> {
+export class ArrayAtom<T> extends BaseAtom<T[]> {
   constructor(initialValue?: T[]) {
     if (initialValue) {
       super(initialValue);
