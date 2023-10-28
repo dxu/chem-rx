@@ -1,6 +1,6 @@
 {
   "name": "chem-rx",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "react state primitives powered by rx.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
