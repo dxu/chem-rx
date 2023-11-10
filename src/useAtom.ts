@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { BaseAtom, NullableBaseAtom } from "./Atom";
+import { BaseAtom, NullableBaseAtom, ReadOnlyAtom } from "./Atom";
 
-export function useAtom<T>(atom: BaseAtom<T> | NullableBaseAtom<T>): T {
+export function useAtom<T>(
+  atom: BaseAtom<T> | NullableBaseAtom<T> | ReadOnlyAtom<T>
+): T {
   const [value, setValue] = useState<T>(atom.value());
 
   useEffect(() => {
