@@ -217,6 +217,16 @@ export class NullableBaseAtom<T> extends BaseAtom<T> {
     // @ts-ignore
     return super.select(key);
   }
+
+  next(nextVal: T | null | undefined) {
+    // @ts-ignore
+    super.next(nextVal);
+  }
+
+  reset() {
+    // @ts-ignore
+    super.next(undefined);
+  }
 }
 
 export class ArrayAtom<T> extends BaseAtom<T[]> {

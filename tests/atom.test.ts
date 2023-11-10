@@ -415,6 +415,31 @@ test("Test select (nested objects)", () => {
   expect(stacySchool.get("graduation")).toBe(2014);
 });
 
+test("Test nullable object", () => {
+  const nestedData = Atom<{
+    [key: string]: {
+      nickname: string;
+      education: {
+        school: string;
+        graduation: number;
+      };
+    };
+  }>();
+
+  // TODO: This errors
+  const newVal = nestedData.select("stacy");
+
+  nestedData.next(undefined);
+  const stacy = nestedData.select("stacy");
+  const stacySchool = nestedData.select("stacy").select("education");
+
+  expect(stacy.get("nickname")).toBe(undefined);
+  expect(stacySchool.get("school")).toBe(undefined);
+  expect(stacySchool.value()).toBe(undefined);
+  nestedData.next(null);
+  expect(nestedData.value()).toBe(null);
+});
+
 test("Test select nullable object", () => {
   const seedData = {
     stacy: {
