@@ -9,55 +9,88 @@ simplicity. Useable with or without React!
 [jotai](https://github.com/pmndrs/jotai) or
 [Recoil](https://github.com/facebookexperimental/Recoil).
 
-Atoms are state containers that take any value - object, array, or primitive.
+Atoms are state containers that take any value - object, array, or primitive. You can create them by simply passing a value into `Atom`.
 
 ```
 import { Atom } from 'chem-rx'
 
+const data$: BaseAtom = Atom('hello')
+```
+
+## Primitives
+
+There are five primitives in `chem-rx`:
+
+1. BaseAtom
+2. ArrayAtom
+3. NullableAtom
+4. ReadOnlyAtom
+5. Signal
+
+Their traits are self-explanatory, and they are generally automatically created for you, depending on how you create your Atom.
+
+In its simplest form, `chem-rx` can be used with BaseAtom and ArrayAtom, giving you a primitive for managing atomic data, but can be composed and split in numerous ways for more advanced use cases.
+
+### BaseAtom & ArrayAtom
+
+`BaseAtom` is the fundamental type that everything else extends. It contains the primary functionality for interacting with your Atom data.
+
+`ArrayAtom` is exactly as it sounds - an atom that holds an array of values (as opposed to an individual)
+
+`Atom` will automatically return you an ArrayAtom or BaseAtom based on what you pass it.
+
+```
 const number$: BaseAtom = Atom(0)
-const string$: BaseAtom = Atom('hello')
-const array$: ArrayAtom = Atom(['hello', 'world'])
-const object$: ObjectAtom = Atom({ 'hello': 'world', 'world': 'hello' })
+const string$: BaseAtom<string> = Atom('hello')
+
+// You can skip the type hint on your variable.
+// This returns a `BaseAtom<{hello: string, world: string}>`
+const object$ = Atom({ 'hello': 'world', 'world': 'hello' })
+
+// You can enforce a generic type on your atoms
+// Note the ArrayAtom's generic type holds the item type held in the array.
+const array$: ArrayAtom<string> = Atom<string[]>(['hello', 'world'])
 ```
 
 ### Getting & setting values
 
-`Atom` will automatically return an instance of `BaseAtom`, `ArrayAtom`, or
-`ObjectAtom` depending on the input.
+`BaseAtom` offers simple helpers to access and modify your data.
 
 ```
-// Base Atom
-number$.set(2)
-number$.value()
-// 2
+// Primitive values (BaseAtom)
+number$.next(2)
+number$.value()  // 2
+
+
+// Object values (BaseAtom)
+object$.get('hello')  // 'world'
+object$.get('fakeKey')  // undefined
+object$.set('hello', 'werld')
+object$.get('hello')  // 'werld'
+
 
 // ArrayAtom
 array$.push('!')
-array$.value()
-// ['hello', 'world', '!']
-array$.get(1)
-// 'world'
-
-// ObjectAtom
-object$.set('world', 'hi')
-object$.value()
-// {'hello': 'world', 'world': 'hi'}
-
-object$.set('sup', 'earth')
-// {'hello': 'world', 'world': 'hi', 'sup': 'earth'}
-
-object$.get('world')
-// 'hi'
+array$.value()  // ['hello', 'world', '!']
+array$.get(2)  // '!'
+array$.get(3)  // undefined
 ```
 
-### Selecting Atoms
+## Composability & ReadOnlyAtom's
 
-You can select Object and Array atoms to return new Atoms that wrap the values
-at that key. This can be useful for working with different parts of nested Array
-and Object atoms.
+Atoms are intended to be easily composed, split, and transformed to handle complex data needs through a simple API.
+
+### Selecting Atoms (read-only)
+
+You can `select` keys on `BaseAtom` and `ArrayAtom` that returns an Atom that wrap the values
+at that key. Any time the original atom changes, your selected atom will automatically update with the latest value.
+
+This can be especially useful for working with different parts of nested Array and Object atoms.
+
+Atoms created with `select` are **read-only** (`ReadOnlyAtom`). This prevents you from modifying original values that the atom was created from.
 
 ```
-const nestedData = Atom({
+const students = Atom({
   stacy: {
     nickname: "stace",
     education: {
@@ -67,40 +100,48 @@ const nestedData = Atom({
   },
 });
 
-const stacy = nestedData.select("stacy");
-console.log(stacy.get('nickname'))
-// 'stace'
+// ReadOnlyAtom<{nickname: string, education: ...}>
+const stacy = students.select("stacy");
+const stacySchool = stacy.select("education");
 
-const stacySchool = nestedData.select("stacy").select("education");
-console.log(stacySchool.get('school'))
-// 'Penn'
+stacy.get('nickname')  // 'stace'
+stacySchool.get('graduation')  // 2014
+
+students.set("stacy", {
+  nickname: "spacey",
+  education: {
+    ...students.get("stacy").education,
+    graduation: 2015,
+  },
+});
+
+stacy.get('nickname')  // 'spacey'
+stacySchool.get('graduation')  // 2015
+
+// ERR: Property 'set' does not exist on type ReadOnlyAtom
+stacy.set('nickname', 'stacy')
+
 ```
 
 ### Derived Atoms (read-only)
 
 You can derive new Atoms from any existing atoms. Any time the original atoms
-change, your derived atoms will automatically update with new values!
+change, your derived atoms will automatically update with new values.
+
+Every derived atom is **read-only**. This prevents you from overriding the
+derived output value, since it is automatically derived from another input.
 
 ```
 const atom$ = Atom(3);
 
-// square it
 const squared$ = atom$.derive((x) => x * x);
 
-// "9"
-console.log(squared$.value())
+squared$.value()  // "9"
 
-// Update the original value
 atom$.set(4)
 
-// "16"
-console.log(squared$.value())
-```
+squared$.value()  // "16"
 
-Every derived atom is **read-only**. This prevents you from overriding the
-derived output value, since it is automatically derived from another input!
-
-```
 // ERR: Property 'set' does not exist on type ReadOnlyAtom
 squared$.set(2)
 ```
@@ -116,7 +157,7 @@ atom$.set(2)
 
 ### Combining Atoms
 
-Multiple atoms can also be **combined** to create brand new atoms!
+Multiple atoms can also be **combined** to create brand new atoms.
 
 Here's an example of joining a set of normalized data models
 
@@ -150,6 +191,8 @@ console.log(mary$.select('pets').value())
  */
 ```
 
+## Pub/Sub
+
 ### Subscribing to updates
 
 Atoms emit values each time they're updated. You can subscribe callbacks to them
@@ -162,8 +205,7 @@ const subscription = atom$.subscribe(val => {
     console.log("Received value: ", val)
 })
 
-atom$.set(4)
-// "Received value: 4"
+atom$.set(4)  // "Received value: 4"
 
 // Unsubscribe to clean up
 subscription.unsubscribe();
@@ -181,8 +223,7 @@ const subscription = signal$.subscribe(() => {
     console.log("PONG")
 })
 
-signal$.ping()
-// "PONG"
+signal$.ping()  // "PONG"
 
 // Unsubscribe to clean up
 subscription.unsubscribe();
@@ -210,8 +251,7 @@ subscription.unsubscribe();
 
 `useAtom` automatically updates with new values in your react components.
 
-If you want to update your atoms, you can simply call the same `set`
-(Base/ObjectAtom) or `push` (ArrayAtom) methods you would typically use outside
+If you want to update your atoms, you can simply call the same `next`, `set`, or `push` (ArrayAtom) methods you would typically use outside
 of react.
 
 ```
@@ -268,22 +308,17 @@ const CounterPage = ({ countFromServer }) => {
 
 There are several suggested "patterns" when using Atoms:
 
-1. Suffix all atoms with `$` (for readability).
-2. Keep all data management **outside** of your views (e.g, React)
-3. Avoid using `set` and `push` directly from your client components. Instead,
-   create helper functions (actions)
-4. Name your helper actions as `<atomName>$<actionName>`, to easily see what
-   atoms are involved.
-5. Name your derived atoms as `<baseAtom>_<derivedValue>$` to easily see which
-   atoms it derives from.
-
-## Common Issues
-
-Here are some common issues you might run into when starting out.
-
 1. Keep your atoms in separate files to prevent circular dependencies.
    1. I typically create a new file for every action, so I can easily see the
       API surface at a glance
+2. Suffix all atoms with `$` (for readability).
+3. Keep all data management **outside** of your views (e.g, React)
+4. Avoid updating atoms (`next`, `set`, and `push`) inside your client components. Instead,
+   create an API of helper functions (actions) and call them.
+5. Name your helper actions as `<atomName>$<actionName>`, to easily see what
+   atoms are involved.
+6. Name your derived atoms as `<baseAtom>_<derivedValue>$` to easily see which
+   atoms it derives from.
 
 ## Advanced Usage with `rxjs`
 
@@ -313,6 +348,4 @@ console.log(squared$.value());
 
 ## Why...?
 
-This library spawned out of a love for the flexibility and expressiveness of
-[rxjs](https://github.com/ReactiveX/rxjs) Observables, and the simplicity of
-atomic libraries like [jotai](https://github.com/pmndrs/jotai).
+[`rxjs`](https://github.com/ReactiveX/rxjs) is awesome, and I wanted a framework-agnostic [jotai](https://github.com/pmndrs/jotai)-like solution with a simpler API.
