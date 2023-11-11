@@ -171,6 +171,8 @@ test("Array Atom get index test", () => {
   atom.push("second");
   expect(atom.value().length).toBe(2);
   expect(atom.get(1)).toBe("second");
+
+  expect(atom.get(2)).toBe(undefined);
 });
 
 test("Test native pipe", () => {
@@ -413,6 +415,58 @@ test("Test select (nested objects)", () => {
   expect(stacy.get("nickname")).toBe("stace");
   expect(stacySchool.get("school")).toBe("Penn");
   expect(stacySchool.get("graduation")).toBe(2014);
+});
+
+test("Test parent value when updating child objects ", () => {
+  const students = Atom<{
+    [key: string]: {
+      nickname: string;
+      education: {
+        school: string;
+        graduation: number;
+      };
+    };
+  }>({
+    stacy: {
+      nickname: "stace",
+      education: {
+        school: "Penn",
+        graduation: 2014,
+      },
+    },
+    annie: {
+      nickname: "ann",
+      education: {
+        school: "Brown",
+        graduation: 2015,
+      },
+    },
+    prabhu: {
+      nickname: "prab",
+      education: {
+        school: "MIT",
+        graduation: 2016,
+      },
+    },
+  });
+  const stacy = students.select("stacy");
+  const stacySchool = stacy.select("education");
+
+  expect(stacy.get("nickname")).toBe("stace");
+  expect(students.get("stacy").nickname).toBe("stace");
+  expect(stacySchool.get("graduation")).toBe(2014);
+
+  students.set("stacy", {
+    nickname: "spacey",
+    education: {
+      ...students.get("stacy").education,
+      graduation: 2015,
+    },
+  });
+
+  expect(stacy.get("nickname")).toBe("spacey");
+  expect(students.get("stacy").nickname).toBe("spacey");
+  expect(stacySchool.get("graduation")).toBe(2015);
 });
 
 test("Test nullable object", () => {
