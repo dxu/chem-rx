@@ -287,22 +287,65 @@ function Counter() {
         <button onClick={() => count$.set('inner', count + 2)}>one up</button> ...
 ```
 
-### useHydrateAtoms
+### hydrateAtoms
 
 With SSR, your atoms will likely need to be properly hydrated to prevent
 server/client mismatches. You can use `useHydrateAtoms` as a simple solution for
 seeding your client-side Atoms with the correct data.
+
+NOTE: **`hydrateAtoms` caches values and only runs on the initial load by default**, to prevent re-hydration when client-side only changes are made to the component.
 
 ```
 import { Atom, useAtom, useHydrateAtoms } from 'chem-rx'
 
 const count$ = Atom(0)
 const CounterPage = ({ countFromServer }) => {
-  useHydrateAtoms([[count$, countFromServer]])
+  hydrateAtoms([[count$, countFromServer]])
   const count = useAtom(count$)
   // count would be the value of `countFromServer`, not 0.
+
+  /*
+   * ... other code
+   */
+
+   useEffect(() => {
+     // This is safe, because hydrateAtoms runs once by default
+     count$.next(10)
+   }, [otherDeps])
+
 }
 ```
+
+#### `force` hydrateAtoms
+
+If you want to force re-hydration, you can optionally pass in a `{force: true}` (for example - you have a top level page wrapper that receives server data )
+
+```
+    export default function CasesPage({ cases }: Props) {
+      // force it to rehydrate with newest value every time this client page is loaded
+      hydrateAtoms([[cases$, cases]], { force: true });
+      const router = useRouter();
+      return (
+        <>
+          <div className="flex justify-between w-full mb-4 px-6 pt-8">
+            <h1 className="text-2xl">Cases</h1>
+            <Button
+              onClick={() => {
+                router.push("/cases/new");
+              }}
+            >
+              <PlusCircle className="w-4 h-4 mr-2" /> Add Cases
+            </Button>
+          </div>
+          <CasesTable />
+        </>
+      );
+    }
+```
+
+In this example, `CasePage` is a top level client component rendering the home page from a SPA, which gets redirected to when coming from another page. We want it to render with the latest server-rendered data.
+
+NOTE: `force` should only be used when the component is expected to only re-render when new data comes from the server - **and never anytime else**.
 
 ## Suggested Usage
 
