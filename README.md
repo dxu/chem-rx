@@ -245,6 +245,15 @@ signal$.ping("hello")
 subscription.unsubscribe();
 ```
 
+You can selectively subscribe to Signals, and selectively ping subscribers by ID.
+
+```
+    const signal = new Signal<string>();
+    signal.subscribe(mockCallbackId123, "123");
+    signal.subscribe(mockCallbackId456, "456");
+    signal.ping("Message for 123", "123");
+```
+
 ## Use with React
 
 ### useAtom
