@@ -20,5 +20,5 @@ export function useSignal<T>(
         subscription.unsubscribe();
       }
     };
-  }, [signal]);
+  }, [signal, callback, id]);
 }
