@@ -1,4 +1,5 @@
 import { ArrayAtom, Atom, BaseAtom, ReadOnlyAtom } from "../src/Atom";
+import { Signal } from "../src/Signal";
 import { BehaviorSubject, map } from "rxjs";
 
 test("Base Atom values test", () => {
@@ -538,6 +539,83 @@ test("Test select nullable object", () => {
   expect(stacy.get("nickname")).toBe("stace");
   expect(stacySchool.get("school")).toBe("Penn");
   expect(stacySchool.get("graduation")).toBe(2014);
+});
+
+describe("SignalWithId", () => {
+  it("should broadcast messages to all subscribers when no ID is provided", (done) => {
+    const signal = new Signal<string>();
+    const mockCallback = jest.fn();
+
+    signal.subscribe(mockCallback);
+    signal.subscribe(mockCallback);
+
+    signal.ping("test message");
+
+    setImmediate(() => {
+      expect(mockCallback).toHaveBeenCalledTimes(2);
+      expect(mockCallback).toHaveBeenCalledWith("test message");
+      done();
+    });
+  });
+
+  it("should send messages only to subscribers with the specific ID", (done) => {
+    const signal = new Signal<string>();
+    const mockCallbackWithId = jest.fn();
+    const mockCallbackWithoutId = jest.fn();
+
+    signal.subscribe(mockCallbackWithId, "123");
+    signal.subscribe(mockCallbackWithoutId);
+
+    signal.ping("ID specific message", "123");
+
+    setImmediate(() => {
+      expect(mockCallbackWithId).toHaveBeenCalledTimes(1);
+      expect(mockCallbackWithId).toHaveBeenCalledWith("ID specific message");
+      expect(mockCallbackWithoutId).toHaveBeenCalledTimes(0);
+      done();
+    });
+  });
+
+  it("should not notify subscribers with different IDs", (done) => {
+    const signal = new Signal<string>();
+    const mockCallbackId123 = jest.fn();
+    const mockCallbackId456 = jest.fn();
+
+    signal.subscribe(mockCallbackId123, "123");
+    signal.subscribe(mockCallbackId456, "456");
+
+    signal.ping("Message for 123", "123");
+
+    setImmediate(() => {
+      expect(mockCallbackId123).toHaveBeenCalledTimes(1);
+      expect(mockCallbackId123).toHaveBeenCalledWith("Message for 123");
+      expect(mockCallbackId456).toHaveBeenCalledTimes(0);
+      done();
+    });
+  });
+
+  it("should notify all subscribers, including those with specific IDs, when pinging without an ID", (done) => {
+    const signal = new Signal<string>();
+    const mockCallback = jest.fn();
+    const mockCallbackWithId = jest.fn();
+
+    // Subscribe one callback without ID (for general broadcast)
+    signal.subscribe(mockCallback);
+    // Subscribe another callback with a specific ID
+    signal.subscribe(mockCallbackWithId, "123");
+
+    // Ping without specifying an ID should notify both subscribers
+    signal.ping("broadcast message");
+
+    setImmediate(() => {
+      // Both callbacks should be called once
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).toHaveBeenCalledWith("broadcast message");
+      expect(mockCallbackWithId).toHaveBeenCalledTimes(1);
+      expect(mockCallbackWithId).toHaveBeenCalledWith("broadcast message");
+      done();
+    });
+  });
 });
 
 /*
