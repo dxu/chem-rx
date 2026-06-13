@@ -88,6 +88,7 @@ at that key. Any time the original atom changes, your selected atom will automat
 This can be especially useful for working with different parts of nested Array and Object atoms.
 
 Atoms created with `select` are **read-only** (`ReadOnlyAtom`). This prevents you from modifying original values that the atom was created from.
+Selected atoms are lazy: calling `value()` reads the latest parent snapshot, and subscribing to a selected atom listens to the parent only while that selected atom has active subscribers.
 
 ```
 const students = Atom({
@@ -130,6 +131,8 @@ change, your derived atoms will automatically update with new values.
 
 Every derived atom is **read-only**. This prevents you from overriding the
 derived output value, since it is automatically derived from another input.
+Like selected atoms, derived atoms are lazy and only stay subscribed to their
+inputs while they have active subscribers.
 
 ```
 const atom$ = Atom(3);

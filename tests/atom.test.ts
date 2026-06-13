@@ -252,6 +252,77 @@ test("Test derive update", () => {
   expect(derivedAtom.value()).toBe(16);
 });
 
+test("Test derive subscribes lazily", () => {
+  const atom = Atom(1);
+  const deriveFn = jest.fn((x: number) => x * 2);
+  const derivedAtom = atom.derive(deriveFn);
+
+  expect(deriveFn).toHaveBeenCalledTimes(1);
+  expect(derivedAtom.value()).toBe(2);
+  expect(deriveFn).toHaveBeenCalledTimes(1);
+
+  atom.next(2);
+  expect(deriveFn).toHaveBeenCalledTimes(1);
+  expect(derivedAtom.value()).toBe(4);
+  expect(deriveFn).toHaveBeenCalledTimes(2);
+
+  const callback = jest.fn();
+  const subscription = derivedAtom.subscribe(callback);
+  expect(callback).toHaveBeenCalledTimes(1);
+  expect(callback).toHaveBeenCalledWith(4);
+
+  atom.next(3);
+  expect(deriveFn).toHaveBeenCalledTimes(3);
+  expect(callback).toHaveBeenCalledTimes(2);
+  expect(callback).toHaveBeenCalledWith(6);
+
+  subscription.unsubscribe();
+  atom.next(4);
+  expect(deriveFn).toHaveBeenCalledTimes(3);
+  expect(callback).toHaveBeenCalledTimes(2);
+  expect(derivedAtom.value()).toBe(8);
+  expect(deriveFn).toHaveBeenCalledTimes(4);
+});
+
+test("Test derive notifies subscribers on parent updates", () => {
+  const atom = Atom(1);
+  const derivedAtom = atom.derive(() => "same");
+  const callback = jest.fn();
+
+  derivedAtom.subscribe(callback);
+  expect(callback).toHaveBeenCalledTimes(1);
+  expect(callback).toHaveBeenCalledWith("same");
+
+  atom.next(2);
+  expect(callback).toHaveBeenCalledTimes(2);
+  expect(callback).toHaveBeenCalledWith("same");
+});
+
+test("Test select stays fresh without leaking subscriptions", () => {
+  const atom = Atom({ a: 1, b: 1 });
+  const selectedAtom = atom.select("a");
+  const callback = jest.fn();
+
+  atom.set("a", 2);
+  expect(selectedAtom.value()).toBe(2);
+
+  const subscription = selectedAtom.subscribe(callback);
+  expect(callback).toHaveBeenCalledTimes(1);
+  expect(callback).toHaveBeenCalledWith(2);
+
+  atom.set("b", 2);
+  expect(callback).toHaveBeenCalledTimes(1);
+
+  atom.set("a", 3);
+  expect(callback).toHaveBeenCalledTimes(2);
+  expect(callback).toHaveBeenCalledWith(3);
+
+  subscription.unsubscribe();
+  atom.set("a", 4);
+  expect(callback).toHaveBeenCalledTimes(2);
+  expect(selectedAtom.value()).toBe(4);
+});
+
 test("Test combine", () => {
   const normalizedData = Atom<{ [key: string]: { name: string } }>({
     a: { name: "a" },

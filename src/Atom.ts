@@ -3,6 +3,7 @@ import {
   AtomSource,
   AtomSubscription,
   ValueStore,
+  createSubscription,
   isAtomSource,
   normalizeSubscription,
   readAtomSourceValue,
@@ -23,12 +24,26 @@ type SelectValue<T, K extends SelectKey<T>> =
     ? SelectedValue<NonNullable<T>, K>
     : SelectedValue<NonNullable<T>, K> | undefined;
 
+type AtomDependency<T> = {
+  getSnapshot: (force?: boolean) => T;
+  subscribe: (
+    onDependencyChange: () => void
+  ) => AtomSubscription | (() => void) | void;
+  shouldNotify?: (previousValue: T, nextValue: T) => boolean;
+};
+
 export class ReadOnlyAtom<T> {
   private _store: ValueStore<T>;
   private _subscriptions: AtomSubscription[] = [];
+  private _dependency: AtomDependency<T> | null = null;
+  private _dependencySubscription: AtomSubscription | null = null;
+  private _subscriberCount = 0;
 
-  constructor(_value: T | AtomSource<T>) {
-    if (isAtomSource<T>(_value)) {
+  constructor(_value: T | AtomSource<T>, dependency?: AtomDependency<T>) {
+    if (dependency) {
+      this._dependency = dependency;
+      this._store = new ValueStore<T>(_value as T);
+    } else if (isAtomSource<T>(_value)) {
       this._store = new ValueStore<T>(readAtomSourceValue(_value));
       this._addSubscription(
         _value.subscribe((value) => {
@@ -42,29 +57,47 @@ export class ReadOnlyAtom<T> {
 
   derive<A>(deriveFn: (value: T, index: number) => A): ReadOnlyAtom<A> {
     let index = 0;
-    const derivedAtom = new ReadOnlyAtom(deriveFn(this.value(), index++));
+    let hasCachedInput = false;
+    let cachedInput: T;
+    let cachedValue: A;
 
-    const subscription = this._subscribe(
-      (value) => {
-        derivedAtom._next(deriveFn(value, index++));
-      },
-      { emitImmediately: false }
-    );
+    const getSnapshot = (force = false) => {
+      const input = this.value();
 
-    derivedAtom._addSubscription(subscription);
+      if (force || !hasCachedInput || !Object.is(cachedInput, input)) {
+        cachedInput = input;
+        cachedValue = deriveFn(input, index++);
+        hasCachedInput = true;
+      }
 
-    return derivedAtom;
+      return cachedValue!;
+    };
+
+    return new ReadOnlyAtom<A>(getSnapshot(), {
+      getSnapshot,
+      subscribe: (onDependencyChange) =>
+        this._subscribe(onDependencyChange, { emitImmediately: false }),
+      shouldNotify: () => true,
+    });
   }
 
   subscribe(observer: AtomObserver<T>): AtomSubscription {
-    return this._store.subscribe(observer);
+    return this._subscribe(observer);
   }
 
   value() {
+    if (this._dependency) {
+      this._refresh(false);
+    }
+
     return this._store.getValue();
   }
 
   dispose() {
+    this._dependencySubscription?.unsubscribe();
+    this._dependencySubscription = null;
+    this._subscriberCount = 0;
+
     for (const subscription of this._subscriptions.splice(0)) {
       subscription.unsubscribe();
     }
@@ -76,28 +109,68 @@ export class ReadOnlyAtom<T> {
   }
 
   select<K extends SelectKey<T>>(key: K): ReadOnlyAtom<SelectValue<T, K>> {
-    let selectedValue = this.get(key);
-    const selectedAtom = new ReadOnlyAtom<SelectValue<T, K>>(selectedValue);
+    const getSnapshot = () => {
+      const value = this.value();
+      return (value as NonNullable<T> | null | undefined)?.[
+        key
+      ] as SelectValue<T, K>;
+    };
 
-    const subscription = this._subscribe(
-      (value) => {
-        const nextValue = (value as NonNullable<T> | null | undefined)?.[
-          key
-        ] as SelectValue<T, K>;
+    return new ReadOnlyAtom<SelectValue<T, K>>(getSnapshot(), {
+      getSnapshot,
+      subscribe: (onDependencyChange) =>
+        this._subscribe(onDependencyChange, { emitImmediately: false }),
+    });
+  }
 
-        if (Object.is(selectedValue, nextValue)) {
-          return;
-        }
+  private _refresh(emit: boolean, force = false) {
+    if (!this._dependency) {
+      return this._store.getValue();
+    }
 
-        selectedValue = nextValue;
-        selectedAtom._next(nextValue);
-      },
-      { emitImmediately: false }
-    );
+    const previousValue = this._store.getValue();
+    const nextValue = this._dependency.getSnapshot(force);
+    const shouldNotify =
+      emit &&
+      (this._dependency.shouldNotify?.(previousValue, nextValue) ??
+        !Object.is(previousValue, nextValue));
 
-    selectedAtom._addSubscription(subscription);
+    if (shouldNotify) {
+      this._store.next(nextValue);
+    } else {
+      this._store.setValue(nextValue);
+    }
 
-    return selectedAtom;
+    return nextValue;
+  }
+
+  private _retainDependency() {
+    if (!this._dependency) {
+      return;
+    }
+
+    this._subscriberCount += 1;
+
+    if (this._subscriberCount === 1) {
+      this._dependencySubscription = normalizeSubscription(
+        this._dependency.subscribe(() => {
+          this._refresh(true, true);
+        })
+      );
+    }
+  }
+
+  private _releaseDependency() {
+    if (!this._dependency || this._subscriberCount === 0) {
+      return;
+    }
+
+    this._subscriberCount -= 1;
+
+    if (this._subscriberCount === 0) {
+      this._dependencySubscription?.unsubscribe();
+      this._dependencySubscription = null;
+    }
   }
 
   /** @internal */
@@ -110,7 +183,26 @@ export class ReadOnlyAtom<T> {
     observer: AtomObserver<T>,
     options?: { emitImmediately?: boolean }
   ): AtomSubscription {
-    return this._store.subscribe(observer, options);
+    if (!this._dependency) {
+      return this._store.subscribe(observer, options);
+    }
+
+    this._refresh(false);
+
+    let subscription: AtomSubscription;
+
+    try {
+      this._retainDependency();
+      subscription = this._store.subscribe(observer, options);
+    } catch (error) {
+      this._releaseDependency();
+      throw error;
+    }
+
+    return createSubscription(() => {
+      subscription.unsubscribe();
+      this._releaseDependency();
+    });
   }
 
   /** @internal */
@@ -218,23 +310,20 @@ export function Atom<T>(_value?: T | AtomSource<T>, readOnly = false) {
 Atom.combine = <A extends readonly unknown[]>(
   ...atoms: readonly [...AtomTuple<A>]
 ): ReadOnlyAtom<A> => {
-  const values = atoms.map((atom) => atom.value()) as unknown as A;
-  const combinedAtom = new ReadOnlyAtom<A>(values);
+  const getSnapshot = () => atoms.map((atom) => atom.value()) as unknown as A;
 
-  atoms.forEach((atom, index) => {
-    const subscription = atom._subscribe(
-      (value) => {
-        const nextValues = [
-          ...(combinedAtom.value() as unknown as unknown[]),
-        ] as unknown[];
-        nextValues[index] = value;
-        combinedAtom._next(nextValues as unknown as A);
-      },
-      { emitImmediately: false }
-    );
+  return new ReadOnlyAtom<A>(getSnapshot(), {
+    getSnapshot,
+    subscribe: (onDependencyChange) => {
+      const subscriptions = atoms.map((atom) =>
+        atom._subscribe(onDependencyChange, { emitImmediately: false })
+      );
 
-    combinedAtom._addSubscription(subscription);
+      return () => {
+        for (const subscription of subscriptions) {
+          subscription.unsubscribe();
+        }
+      };
+    },
   });
-
-  return combinedAtom;
 };

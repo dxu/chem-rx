@@ -113,6 +113,10 @@ export class ValueStore<T> {
     return this._value;
   }
 
+  setValue(value: T) {
+    this._value = value;
+  }
+
   next(value: T) {
     this._value = value;
     notifyListeners(this._listeners, value);
