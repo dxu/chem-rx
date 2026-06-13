@@ -5,6 +5,11 @@
   "main": "dist/index.cjs.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "prebuild": "rimraf dist",
     "test": "jest",
