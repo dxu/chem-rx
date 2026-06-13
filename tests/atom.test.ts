@@ -1,6 +1,28 @@
 import { ArrayAtom, Atom, BaseAtom, ReadOnlyAtom } from "../src/Atom";
 import { Signal } from "../src/Signal";
-import { BehaviorSubject, map } from "rxjs";
+
+function createSource<T>(initialValue: T) {
+  let currentValue = initialValue;
+  const listeners = new Set<(value: T) => void>();
+
+  return {
+    getValue: () => currentValue,
+    next: (value: T) => {
+      currentValue = value;
+      listeners.forEach((listener) => listener(value));
+    },
+    subscribe: (listener: (value: T) => void) => {
+      listeners.add(listener);
+      listener(currentValue);
+
+      return {
+        unsubscribe: () => {
+          listeners.delete(listener);
+        },
+      };
+    },
+  };
+}
 
 test("Base Atom values test", () => {
   const atom = Atom("aweofij");
@@ -176,16 +198,31 @@ test("Array Atom get index test", () => {
   expect(atom.get(2)).toBe(undefined);
 });
 
-test("Test native pipe", () => {
-  const atom = Atom(3);
-  expect(atom instanceof BaseAtom).toBe(true);
+test("Test source updates", () => {
+  const source = createSource(3);
+  const atom = Atom(source);
+
   expect(atom.value()).toBe(3);
 
-  const derivedAtom = atom.pipe(map((x) => x * x));
-  expect(derivedAtom instanceof ReadOnlyAtom).toBe(true);
-  expect(derivedAtom).not.toHaveProperty("set");
+  source.next(4);
+  expect(atom.value()).toBe(4);
+});
 
-  expect(derivedAtom.value()).toBe(9);
+test("Test subscriptions can unsubscribe", () => {
+  const atom = Atom(3);
+  const callback = jest.fn();
+  const subscription = atom.subscribe(callback);
+
+  expect(callback).toHaveBeenCalledTimes(1);
+  expect(callback).toHaveBeenCalledWith(3);
+
+  atom.next(4);
+  expect(callback).toHaveBeenCalledTimes(2);
+  expect(callback).toHaveBeenCalledWith(4);
+
+  subscription.unsubscribe();
+  atom.next(5);
+  expect(callback).toHaveBeenCalledTimes(2);
 });
 
 test("Test derive", () => {
@@ -305,16 +342,16 @@ test("Test select (simple)", () => {
     c: [5, 3, 4],
   });
 
-  const primitiveNum = new BehaviorSubject(4);
+  const primitiveNum = createSource(4);
   const primitiveNumAtom = Atom<number>(primitiveNum);
 
-  const primitiveStr = new BehaviorSubject("a");
+  const primitiveStr = createSource("a");
   const primitiveStringAtom = Atom<string>(primitiveStr);
 
-  const arrayObs = new BehaviorSubject(["a"]);
+  const arrayObs = createSource(["a"]);
   const arrayObsAtom = Atom<string[]>(arrayObs);
 
-  const objObs = new BehaviorSubject({ a: 1 });
+  const objObs = createSource({ a: 1 });
   const objObsAtom2 = Atom(objObs);
   const objObsAtom1 = Atom<{ [id: string]: number }>(objObs);
 
@@ -326,7 +363,7 @@ test("Test select (simple)", () => {
     c: { c: "c" },
   });
 
-  const selectedString: BaseAtom<{ [key: string]: string }> =
+  const selectedString: ReadOnlyAtom<{ [key: string]: string }> =
     stringData.select("b");
 
   const normalizedOptionalStringData = Atom<{
@@ -355,9 +392,11 @@ test("Test select (simple)", () => {
 
   const sel3 = objObsAtom2.select("a");
 
-  expect(selected instanceof BaseAtom).toBe(true);
+  expect(selected instanceof ReadOnlyAtom).toBe(true);
+  expect(selected).not.toHaveProperty("set");
 
-  expect(selected instanceof BaseAtom).toBe(true);
+  expect(selected instanceof ReadOnlyAtom).toBe(true);
+  expect(selected).not.toHaveProperty("set");
 
   // const combined = Atom.combine(normalizedData, ids).derive(([normed, ids]) => {
   //   return ids.map((id) => normed[id]);

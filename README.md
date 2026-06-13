@@ -1,7 +1,7 @@
 # chem-rx
 
-`chem-rx` wraps `rxjs` to provide a state management solution focused on
-simplicity. Useable with or without React!
+`chem-rx` provides a small atomic state management layer focused on simplicity.
+Useable with or without React!
 
 ## Atom
 
@@ -138,7 +138,7 @@ const squared$ = atom$.derive((x) => x * x);
 
 squared$.value()  // "9"
 
-atom$.set(4)
+atom$.next(4)
 
 squared$.value()  // "16"
 
@@ -256,6 +256,8 @@ You can selectively subscribe to Signals, and selectively ping subscribers by ID
 
 ## Use with React
 
+The root package is headless. React hooks are available from `chem-rx/react`.
+
 ### useAtom
 
 `useAtom` automatically updates with new values in your react components.
@@ -264,7 +266,8 @@ If you want to update your atoms, you can simply call the same `next`, `set`, or
 of react.
 
 ```
-import { Atom, useAtom } from 'chem-rx'
+import { Atom } from 'chem-rx'
+import { useAtom } from 'chem-rx/react'
 
 const count$ = Atom(0)
 
@@ -273,18 +276,19 @@ function Counter() {
   return (
     <h1>
       {count}
-        <button onClick={() => count$.set(count$.value() + 1)}>one up</button> ...
+        <button onClick={() => count$.next(count$.value() + 1)}>one up</button> ...
 ```
 
 Remember that you can mix and match for any of your needs
 
 ### useSelectAtom
 
-With `useSelect` can select a specific key from an atom, and still have it live
+With `useSelectAtom` you can select a specific key from an atom, and still have it live
 update in your react component.
 
 ```
-import { Atom, useAtom } from 'chem-rx'
+import { Atom } from 'chem-rx'
+import { useSelectAtom } from 'chem-rx/react'
 
 const count$ = Atom({ inner: 0 })
 
@@ -299,13 +303,14 @@ function Counter() {
 ### hydrateAtoms
 
 With SSR, your atoms will likely need to be properly hydrated to prevent
-server/client mismatches. You can use `useHydrateAtoms` as a simple solution for
+server/client mismatches. You can use `hydrateAtoms` as a simple solution for
 seeding your client-side Atoms with the correct data.
 
 NOTE: **`hydrateAtoms` caches values and only runs on the initial load by default**, to prevent re-hydration when client-side only changes are made to the component.
 
 ```
-import { Atom, useAtom, useHydrateAtoms } from 'chem-rx'
+import { Atom, hydrateAtoms } from 'chem-rx'
+import { useAtom } from 'chem-rx/react'
 
 const count$ = Atom(0)
 const CounterPage = ({ countFromServer }) => {
@@ -372,32 +377,31 @@ There are several suggested "patterns" when using Atoms:
 6. Name your derived atoms as `<baseAtom>_<derivedValue>$` to easily see which
    atoms it derives from.
 
-## Advanced Usage with `rxjs`
+## Advanced Usage
 
-Behind the scenes, `chem-rx` uses
-[rxjs Observables](https://rxjs.dev/guide/operators) to enable reactivity.
-`Atom` abstracts away the majority of Rx intentionally, to extract the most
-common patterns used when managing front-end data.
+Behind the scenes, `chem-rx` uses a tiny synchronous external-store primitive to
+enable reactivity. `derive`, `select`, and `combine` cover the common state
+composition patterns without requiring a stream library.
 
-If you're coming in with prior experience and are seeking more complex operators
-enabled by Rx, you're in luck, because every Atom is simply a wrapper around a
-`BehaviorSubject`!
-
-You can use any rxjs operations you want with `Atom.pipe`, which wraps
-`Observable.pipe` to return an Atom.
+If you already have an Observable-like source, you can still create an atom from
+it as long as it has `subscribe` and, ideally, a synchronous `getValue` or
+`value` method for the initial snapshot.
 
 ```
-import { map } from "rxjs";
+const source = {
+  getValue: () => 3,
+  subscribe: (next) => {
+    next(3);
+    return { unsubscribe: () => {} };
+  },
+};
 
-const atom$ = Atom(3);
-
-// Replace `map` with any operators from rxjs
-const squared$: Atom<number> = atom.pipe(map((x) => x * x));
-
-// "9"
-console.log(squared$.value());
+const atom$ = Atom(source);
 ```
 
 ## Why...?
 
-[`rxjs`](https://github.com/ReactiveX/rxjs) is awesome, and I wanted a framework-agnostic [jotai](https://github.com/pmndrs/jotai)-like solution with a simpler API.
+I wanted a framework-agnostic [jotai](https://github.com/pmndrs/jotai)-like
+solution with a simpler API. The core atom model does not need a full stream
+library, so `chem-rx` keeps the small atom surface and leaves heavier reactive
+tooling optional.

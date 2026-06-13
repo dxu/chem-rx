@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { BaseAtom, NullableBaseAtom, ReadOnlyAtom } from "./Atom";
+import { useAtom } from "./useAtom";
 
 export function useSelectAtom<
   T extends
@@ -9,17 +10,9 @@ export function useSelectAtom<
   K extends keyof T,
   V = T[K]
 >(atom: NullableBaseAtom<T> | BaseAtom<T> | ReadOnlyAtom<T>, key: K): T[K] {
-  const [value, setValue] = useState<T[K]>(atom.get(key)!);
-
-  useEffect(() => {
-    const subscription = atom.select(key).subscribe((val) => {
-      setValue(val as T[K]);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [atom]);
-
-  return value;
+  const selectedAtom = useMemo(
+    () => atom.select(key) as ReadOnlyAtom<T[K]>,
+    [atom, key]
+  );
+  return useAtom(selectedAtom);
 }

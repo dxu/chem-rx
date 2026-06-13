@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Signal } from "./Signal";
-import { Subscription } from "rxjs";
+import { AtomSubscription } from "./store";
 
 export function useSignal<T>(
   signal: Signal<T>,
@@ -11,7 +11,7 @@ export function useSignal<T>(
     // Assuming the signal might not have an initial value method like `atom.value()`,
     // If your signal class has a method to get the current/latest value, use it here to initialize.
 
-    let subscription: Subscription;
+    let subscription: AtomSubscription | undefined;
     if (callback) {
       subscription = signal.subscribe(callback, id);
     }

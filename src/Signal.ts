@@ -1,38 +1,57 @@
-import { Subject, Subscription } from "rxjs";
+import {
+  AtomListener,
+  AtomSubscription,
+  createSubscription,
+  notifyListeners,
+} from "./store";
 
 export class Signal<T = any> {
-  private _subjects: Map<string, Subject<T>>;
-  private _defaultSubject: Subject<T>;
-
-  constructor() {
-    this._subjects = new Map();
-    this._defaultSubject = new Subject<T>();
-  }
+  private _listeners: AtomListener<T>[] = [];
+  private _listenersById = new Map<string, AtomListener<T>[]>();
 
   ping(value: T, id?: string) {
-    if (id && this._subjects.has(id)) {
-      // If an ID is provided and exists, notify only that subscription.
-      this._subjects.get(id)?.next(value);
-    } else {
-      // No ID provided, notify all default subscribers.
-      this._defaultSubject.next(value);
-      // Additionally, notify all subscriptions as a broadcast.
-      this._subjects.forEach((subject) => subject.next(value));
+    if (id && this._listenersById.has(id)) {
+      notifyListeners(this._listenersById.get(id)!, value);
+      return;
+    }
+
+    notifyListeners(this._listeners, value);
+
+    for (const listeners of this._listenersById.values()) {
+      notifyListeners(listeners, value);
     }
   }
 
-  subscribe(callback: (value: T) => void, id?: string): Subscription {
-    if (id) {
-      // If an ID is provided, subscribe to the specific ID.
-      if (!this._subjects.has(id)) {
-        this._subjects.set(id, new Subject<T>());
+  subscribe(callback: AtomListener<T>, id?: string): AtomSubscription {
+    if (!id) {
+      this._listeners.push(callback);
+
+      return createSubscription(() => {
+        removeListener(this._listeners, callback);
+      });
+    }
+
+    const listeners = this._listenersById.get(id) ?? [];
+    listeners.push(callback);
+    this._listenersById.set(id, listeners);
+
+    return createSubscription(() => {
+      removeListener(listeners, callback);
+
+      if (listeners.length === 0) {
+        this._listenersById.delete(id);
       }
-      return this._subjects.get(id)!.subscribe(callback);
-    } else {
-      // No ID provided, subscribe to the default subject.
-      return this._defaultSubject.subscribe(callback);
-    }
+    });
   }
+}
 
-  // Optionally, implement unsubscribe logic to manage subscriptions.
+function removeListener<T>(
+  listeners: AtomListener<T>[],
+  callback: AtomListener<T>
+) {
+  const index = listeners.indexOf(callback);
+
+  if (index >= 0) {
+    listeners.splice(index, 1);
+  }
 }

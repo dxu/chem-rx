@@ -1,20 +1,22 @@
-import { useEffect, useState } from "react";
-import { BaseAtom, NullableBaseAtom, ReadOnlyAtom } from "./Atom";
+import { useSyncExternalStore } from "react";
+import { ReadOnlyAtom } from "./Atom";
 
-export function useAtom<T>(
-  atom: BaseAtom<T> | NullableBaseAtom<T> | ReadOnlyAtom<T>
-): T {
-  const [value, setValue] = useState<T>(atom.value());
+export function useAtom<T>(atom: ReadOnlyAtom<T>): T {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      let subscribed = false;
+      const subscription = atom.subscribe(() => {
+        if (subscribed) {
+          onStoreChange();
+        }
+      });
+      subscribed = true;
 
-  useEffect(() => {
-    const subscription = atom.subscribe((val) => {
-      setValue(val);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [atom]);
-
-  return value;
+      return () => {
+        subscription.unsubscribe();
+      };
+    },
+    () => atom.value(),
+    () => atom.value()
+  );
 }

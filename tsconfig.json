@@ -14,7 +14,11 @@
     "baseUrl": ".",
     "outDir": "dist",
     "paths": {
+      "chem-rx": ["./src/index.ts"],
+      "chem-rx/react": ["./src/react.ts"],
+      "chem-rx/*": ["./src/*.ts"],
       "chemical-rx": ["./src/index.ts"],
+      "chemical-rx/react": ["./src/react.ts"],
       "chemical-rx/*": ["./src/*.ts"]
     }
   },

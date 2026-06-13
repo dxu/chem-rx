@@ -4,7 +4,6 @@ const { visualizer } = require("rollup-plugin-visualizer");
 
 const babel = require("@rollup/plugin-babel");
 const resolve = require("@rollup/plugin-node-resolve");
-const typescript = require("@rollup/plugin-typescript");
 // const { sizeSnapshot } = require("rollup-plugin-size-snapshot");
 
 const createBabelConfig = require("./babel.config");
@@ -17,23 +16,6 @@ const getBabelOptions = (targets) => ({
   ...createBabelConfig({ env: (env) => env === "build" }, targets),
   extensions,
 });
-
-function createDeclarationConfig(input, output) {
-  return {
-    input,
-    output: {
-      dir: output,
-    },
-    external,
-    plugins: [
-      typescript({
-        declaration: true,
-        emitDeclarationOnly: true,
-        outDir: output,
-      }),
-    ],
-  };
-}
 
 function createESMConfig(input, output) {
   return {
@@ -72,7 +54,6 @@ function createIIFEConfig(input, output, globalName) {
       name: globalName,
       globals: {
         react: "React",
-        rxjs: "rxjs",
       },
     },
     external,
@@ -85,8 +66,9 @@ function createIIFEConfig(input, output, globalName) {
 }
 
 module.exports = [
-  createDeclarationConfig(`src/index.ts`, "dist"),
-  createESMConfig("src/index.ts", "dist/index.js"),
+  createESMConfig("src/index.ts", "dist/index.mjs"),
+  createESMConfig("src/react.ts", "dist/react.mjs"),
   createCommonJSConfig("src/index.ts", "dist/index.cjs.js"),
+  createCommonJSConfig("src/react.ts", "dist/react.cjs.js"),
   createIIFEConfig("src/index.ts", "dist/index.iife.js", "chemicalRx"),
 ];
