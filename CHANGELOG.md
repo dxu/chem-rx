@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0 - 2026-06-14
+
+### Added
+
+- `useSelector(atom, selector, equals?)` React hook (`chem-rx/react`): derive any
+  value from an atom with a selector function and re-render only when the selected
+  value changes. The optional `equals` comparator (defaults to `Object.is`) dedupes
+  re-renders by content, so an atom that churns references on every update only
+  re-renders the component when the selected slice is not equal. See
+  [useSelector](./README.md#useselector).
+
+### Removed (breaking)
+
+- Removed `useSelectAtom`. Migrate to `useSelector` with a selector function:
+  `useSelectAtom(atom, 'key')` becomes `useSelector(atom, (s) => s.key)`.
+
 ## 0.2.0 - 2026-06-13
 
 ### Added

@@ -389,23 +389,42 @@ function Counter() {
 
 Remember that you can mix and match for any of your needs
 
-### useSelectAtom
+### useSelector
 
-With `useSelectAtom` you can select a specific key from an atom, and still have it live
-update in your react component.
+With `useSelector` you can derive any value from an atom with a selector function, and
+have your component live update — re-rendering only when the selected value changes.
 
 ```
 import { Atom } from 'chem-rx'
-import { useSelectAtom } from 'chem-rx/react'
+import { useSelector } from 'chem-rx/react'
 
 const count$ = Atom({ inner: 0 })
 
 function Counter() {
-  const count = useSelectAtom(count$, 'inner')
+  const count = useSelector(count$, (s) => s.inner)
   return (
     <h1>
       {count}
         <button onClick={() => count$.set('inner', count + 2)}>one up</button> ...
+```
+
+`useSelector` takes an optional `equals` comparator (defaulting to `Object.is`) so you
+can dedupe re-renders by content. This is the React-side counterpart to the atom-level
+`equals` option described in [Equality & change detection](#equality--change-detection):
+even if the parent atom rebuilds its value (and references) on every update, the
+component only re-renders when the selected slice is *not* equal.
+
+```
+const frame$ = Atom(initialFrame)
+
+const itemsEqual = (a, b) =>
+  a.length === b.length && a.every((v, i) => v === b[i])
+
+function ItemList() {
+  // re-renders only when `items` changes by content, not every frame
+  const items = useSelector(frame$, (f) => f.items, itemsEqual)
+  return <ul>{items.map((it) => <li key={it.id}>{it.label}</li>)}</ul>
+}
 ```
 
 ### hydrateAtoms
