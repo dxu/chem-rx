@@ -24,12 +24,25 @@ type SelectValue<T, K extends SelectKey<T>> =
     ? SelectedValue<NonNullable<T>, K>
     : SelectedValue<NonNullable<T>, K> | undefined;
 
+/**
+ * Comparator used to decide whether an atom's value has changed.
+ *
+ * An atom notifies subscribers only when `equals(previous, next)` returns
+ * `false`. The default for every atom is {@link Object.is} (value equality for
+ * primitives, reference identity for objects/arrays). Supply a content
+ * comparator to dedup by data, or `() => false` to force every update to emit.
+ */
+export type Equals<T> = (previousValue: T, nextValue: T) => boolean;
+
+type AtomOptions<T> = {
+  equals?: Equals<T>;
+};
+
 type AtomDependency<T> = {
   getSnapshot: (force?: boolean) => T;
   subscribe: (
     onDependencyChange: () => void
   ) => AtomSubscription | (() => void) | void;
-  shouldNotify?: (previousValue: T, nextValue: T) => boolean;
 };
 
 export class ReadOnlyAtom<T> {
@@ -38,8 +51,20 @@ export class ReadOnlyAtom<T> {
   private _dependency: AtomDependency<T> | null = null;
   private _dependencySubscription: AtomSubscription | null = null;
   private _subscriberCount = 0;
+  private _equals: Equals<T>;
 
-  constructor(_value: T | AtomSource<T>, dependency?: AtomDependency<T>) {
+  /**
+   * @param options.equals Comparator deciding when the value has changed.
+   *   Defaults to {@link Object.is}. Subscribers are notified only when it
+   *   returns `false`.
+   */
+  constructor(
+    _value: T | AtomSource<T>,
+    dependency?: AtomDependency<T>,
+    options?: AtomOptions<T>
+  ) {
+    this._equals = options?.equals ?? Object.is;
+
     if (dependency) {
       this._dependency = dependency;
       this._store = new ValueStore<T>(_value as T);
@@ -55,7 +80,18 @@ export class ReadOnlyAtom<T> {
     }
   }
 
-  derive<A>(deriveFn: (value: T, index: number) => A): ReadOnlyAtom<A> {
+  /**
+   * Create a read-only atom whose value is derived from this atom.
+   *
+   * By default the derived atom notifies subscribers only when its computed
+   * output differs by {@link Object.is}. Pass `options.equals` to dedup by
+   * content (useful when `deriveFn` returns a fresh object/array each time), or
+   * `equals: () => false` to re-emit on every parent update.
+   */
+  derive<A>(
+    deriveFn: (value: T, index: number) => A,
+    options?: AtomOptions<A>
+  ): ReadOnlyAtom<A> {
     let index = 0;
     let hasCachedInput = false;
     let cachedInput: T;
@@ -73,12 +109,15 @@ export class ReadOnlyAtom<T> {
       return cachedValue!;
     };
 
-    return new ReadOnlyAtom<A>(getSnapshot(), {
-      getSnapshot,
-      subscribe: (onDependencyChange) =>
-        this._subscribe(onDependencyChange, { emitImmediately: false }),
-      shouldNotify: () => true,
-    });
+    return new ReadOnlyAtom<A>(
+      getSnapshot(),
+      {
+        getSnapshot,
+        subscribe: (onDependencyChange) =>
+          this._subscribe(onDependencyChange, { emitImmediately: false }),
+      },
+      options
+    );
   }
 
   subscribe(observer: AtomObserver<T>): AtomSubscription {
@@ -108,7 +147,17 @@ export class ReadOnlyAtom<T> {
     return val?.[key] as SelectValue<T, K>;
   }
 
-  select<K extends SelectKey<T>>(key: K): ReadOnlyAtom<SelectValue<T, K>> {
+  /**
+   * Create a read-only atom that tracks `key` on this atom's value.
+   *
+   * By default the selected atom notifies subscribers only when the selected
+   * value differs by {@link Object.is}. Pass `options.equals` to dedup by
+   * content instead.
+   */
+  select<K extends SelectKey<T>>(
+    key: K,
+    options?: AtomOptions<SelectValue<T, K>>
+  ): ReadOnlyAtom<SelectValue<T, K>> {
     const getSnapshot = () => {
       const value = this.value();
       return (value as NonNullable<T> | null | undefined)?.[
@@ -116,11 +165,15 @@ export class ReadOnlyAtom<T> {
       ] as SelectValue<T, K>;
     };
 
-    return new ReadOnlyAtom<SelectValue<T, K>>(getSnapshot(), {
-      getSnapshot,
-      subscribe: (onDependencyChange) =>
-        this._subscribe(onDependencyChange, { emitImmediately: false }),
-    });
+    return new ReadOnlyAtom<SelectValue<T, K>>(
+      getSnapshot(),
+      {
+        getSnapshot,
+        subscribe: (onDependencyChange) =>
+          this._subscribe(onDependencyChange, { emitImmediately: false }),
+      },
+      options
+    );
   }
 
   private _refresh(emit: boolean, force = false) {
@@ -130,10 +183,7 @@ export class ReadOnlyAtom<T> {
 
     const previousValue = this._store.getValue();
     const nextValue = this._dependency.getSnapshot(force);
-    const shouldNotify =
-      emit &&
-      (this._dependency.shouldNotify?.(previousValue, nextValue) ??
-        !Object.is(previousValue, nextValue));
+    const shouldNotify = emit && !this._equals(previousValue, nextValue);
 
     if (shouldNotify) {
       this._store.next(nextValue);
@@ -175,7 +225,13 @@ export class ReadOnlyAtom<T> {
 
   /** @internal */
   _next(value: T) {
-    this._store.next(value);
+    const previousValue = this._store.getValue();
+
+    if (this._equals(previousValue, value)) {
+      this._store.setValue(value);
+    } else {
+      this._store.next(value);
+    }
   }
 
   /** @internal */
@@ -235,8 +291,15 @@ export class BaseAtom<T> extends ReadOnlyAtom<T> {
 }
 
 export class NullableBaseAtom<T> extends BaseAtom<T | null | undefined> {
-  constructor(_value?: T | null | undefined | AtomSource<T | null | undefined>) {
-    super(_value as T | null | undefined | AtomSource<T | null | undefined>);
+  constructor(
+    _value?: T | null | undefined | AtomSource<T | null | undefined>,
+    options?: AtomOptions<T | null | undefined>
+  ) {
+    super(
+      _value as T | null | undefined | AtomSource<T | null | undefined>,
+      undefined,
+      options
+    );
   }
 
   next(nextVal: T | null | undefined) {
@@ -249,11 +312,11 @@ export class NullableBaseAtom<T> extends BaseAtom<T | null | undefined> {
 }
 
 export class ArrayAtom<T> extends BaseAtom<T[]> {
-  constructor(initialValue?: T[] | AtomSource<T[]>) {
+  constructor(initialValue?: T[] | AtomSource<T[]>, options?: AtomOptions<T[]>) {
     if (initialValue === undefined) {
-      super([]);
+      super([], undefined, options);
     } else {
-      super(initialValue);
+      super(initialValue, undefined, options);
     }
   }
 
@@ -262,49 +325,87 @@ export class ArrayAtom<T> extends BaseAtom<T[]> {
   }
 }
 
+/**
+ * Options for the {@link Atom} factory. `readOnly` produces a
+ * {@link ReadOnlyAtom}; `equals` sets the change comparator (defaults to
+ * {@link Object.is}).
+ */
+export type AtomFactoryOptions<T> = AtomOptions<T> & { readOnly?: boolean };
+
+// Legacy positional `readOnly` form.
 export function Atom<T>(
   value: T | AtomSource<T>,
   readOnly: true
 ): ReadOnlyAtom<T>;
-export function Atom<T extends any[]>(value: AtomSource<T>): ArrayAtom<T[number]>;
-export function Atom<T>(value: AtomSource<T>): BaseAtom<T>;
-export function Atom<T extends any[]>(value?: T): ArrayAtom<T[number]>;
-export function Atom<T extends { [key: string]: T[keyof T] }>(
-  value: T
-): BaseAtom<T>;
-export function Atom<T extends { [key: string]: T[keyof T] }>(
-  value?: T
-): NullableBaseAtom<T>;
-export function Atom<T>(value: T): BaseAtom<T>;
-export function Atom<T>(value?: T): NullableBaseAtom<T>;
+// Options-object form.
 export function Atom<T>(
   value: T | AtomSource<T>,
-  readOnly?: boolean
+  options: AtomFactoryOptions<T> & { readOnly: true }
+): ReadOnlyAtom<T>;
+export function Atom<T extends any[]>(
+  value: AtomSource<T>,
+  options?: AtomFactoryOptions<T>
+): ArrayAtom<T[number]>;
+export function Atom<T>(
+  value: AtomSource<T>,
+  options?: AtomFactoryOptions<T>
+): BaseAtom<T>;
+export function Atom<T extends any[]>(
+  value: T,
+  options?: AtomFactoryOptions<T>
+): ArrayAtom<T[number]>;
+export function Atom<T extends { [key: string]: T[keyof T] }>(
+  value: T,
+  options?: AtomFactoryOptions<T>
+): BaseAtom<T>;
+export function Atom<T extends { [key: string]: T[keyof T] }>(
+  value?: T,
+  options?: AtomFactoryOptions<T>
+): NullableBaseAtom<T>;
+export function Atom<T>(value: T, options?: AtomFactoryOptions<T>): BaseAtom<T>;
+export function Atom<T>(
+  value?: T,
+  options?: AtomFactoryOptions<T>
+): NullableBaseAtom<T>;
+export function Atom<T>(
+  value: T | AtomSource<T>,
+  optionsOrReadOnly?: boolean | AtomFactoryOptions<T>
 ): ReadOnlyAtom<T> | BaseAtom<T>;
-export function Atom<T>(_value?: T | AtomSource<T>, readOnly = false) {
+export function Atom<T>(
+  _value?: T | AtomSource<T>,
+  optionsOrReadOnly?: boolean | AtomFactoryOptions<T>
+) {
+  const factoryOptions: AtomFactoryOptions<T> =
+    typeof optionsOrReadOnly === "boolean"
+      ? { readOnly: optionsOrReadOnly }
+      : optionsOrReadOnly ?? {};
+
+  const { readOnly = false, equals } = factoryOptions;
+  const atomOptions: AtomOptions<any> | undefined = equals ? { equals } : undefined;
+
   if (readOnly) {
-    return new ReadOnlyAtom(_value as T | AtomSource<T>);
+    return new ReadOnlyAtom(_value as T | AtomSource<T>, undefined, atomOptions);
   }
 
   if (isAtomSource<T>(_value)) {
     const sourceValue = readAtomSourceValue(_value);
 
     if (Array.isArray(sourceValue)) {
-      return new ArrayAtom(_value as AtomSource<any[]>);
+      return new ArrayAtom(_value as AtomSource<any[]>, atomOptions);
     }
 
-    return new BaseAtom(_value);
+    return new BaseAtom(_value, undefined, atomOptions);
   }
 
   if (Array.isArray(_value)) {
-    return new ArrayAtom<T>(_value);
+    return new ArrayAtom<T>(_value, atomOptions);
   }
 
   if (_value == null) {
-    return new NullableBaseAtom();
+    return new NullableBaseAtom(undefined, atomOptions);
   }
 
-  return new BaseAtom(_value);
+  return new BaseAtom(_value, undefined, atomOptions);
 }
 
 Atom.combine = <A extends readonly unknown[]>(

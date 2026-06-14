@@ -284,9 +284,24 @@ test("Test derive subscribes lazily", () => {
   expect(deriveFn).toHaveBeenCalledTimes(4);
 });
 
-test("Test derive notifies subscribers on parent updates", () => {
+test("Test derive dedups by Object.is on parent updates", () => {
   const atom = Atom(1);
   const derivedAtom = atom.derive(() => "same");
+  const callback = jest.fn();
+
+  derivedAtom.subscribe(callback);
+  expect(callback).toHaveBeenCalledTimes(1);
+  expect(callback).toHaveBeenCalledWith("same");
+
+  // Parent changed, but the derived output is Object.is-equal, so by default
+  // the derived atom does NOT re-emit.
+  atom.next(2);
+  expect(callback).toHaveBeenCalledTimes(1);
+});
+
+test("Test derive can opt back into always-notify with equals: () => false", () => {
+  const atom = Atom(1);
+  const derivedAtom = atom.derive(() => "same", { equals: () => false });
   const callback = jest.fn();
 
   derivedAtom.subscribe(callback);
@@ -296,6 +311,87 @@ test("Test derive notifies subscribers on parent updates", () => {
   atom.next(2);
   expect(callback).toHaveBeenCalledTimes(2);
   expect(callback).toHaveBeenCalledWith("same");
+});
+
+test("Test derive content equals dedups across reference-churning parents", () => {
+  // Emulates the "rebuild a fresh snapshot every tick" producer: the parent
+  // emits a new array reference each update, but the derived slice is
+  // content-equal, so a content comparator suppresses re-emits.
+  const frame$ = Atom<{ tickets: { id: number }[] }>({ tickets: [{ id: 1 }] });
+
+  const tickets$ = frame$.derive((frame) => frame.tickets, {
+    equals: (a, b) =>
+      a.length === b.length && a.every((t, i) => t.id === b[i].id),
+  });
+
+  const callback = jest.fn();
+  tickets$.subscribe(callback);
+  expect(callback).toHaveBeenCalledTimes(1);
+
+  // New frame reference, new tickets array reference, identical content.
+  frame$.next({ tickets: [{ id: 1 }] });
+  expect(callback).toHaveBeenCalledTimes(1);
+
+  // Content actually changes -> re-emit.
+  frame$.next({ tickets: [{ id: 2 }] });
+  expect(callback).toHaveBeenCalledTimes(2);
+});
+
+test("Test base atom dedups by Object.is by default", () => {
+  const atom = Atom(1);
+  const callback = jest.fn();
+
+  atom.subscribe(callback);
+  expect(callback).toHaveBeenCalledTimes(1);
+
+  // Same value -> no re-emit under the Object.is default.
+  atom.next(1);
+  expect(callback).toHaveBeenCalledTimes(1);
+
+  atom.next(2);
+  expect(callback).toHaveBeenCalledTimes(2);
+});
+
+test("Test base atom content equals", () => {
+  const atom = Atom(
+    { x: 1 },
+    { equals: (a, b) => a.x === b.x }
+  );
+  const callback = jest.fn();
+
+  atom.subscribe(callback);
+  expect(callback).toHaveBeenCalledTimes(1);
+
+  // New reference, content-equal -> no notify.
+  atom.next({ x: 1 });
+  expect(callback).toHaveBeenCalledTimes(1);
+  expect(atom.value()).toEqual({ x: 1 });
+
+  atom.next({ x: 2 });
+  expect(callback).toHaveBeenCalledTimes(2);
+  expect(atom.value().x).toBe(2);
+});
+
+test("Test select with custom equals dedups by content", () => {
+  const atom = Atom<{ a: { id: number }; b: number }>({
+    a: { id: 1 },
+    b: 1,
+  });
+
+  const selectedA = atom.select("a", {
+    equals: (prev, next) => prev?.id === next?.id,
+  });
+  const callback = jest.fn();
+
+  selectedA.subscribe(callback);
+  expect(callback).toHaveBeenCalledTimes(1);
+
+  // `a` is replaced with a new reference but same id -> content equals suppresses.
+  atom.set("a", { id: 1 });
+  expect(callback).toHaveBeenCalledTimes(1);
+
+  atom.set("a", { id: 2 });
+  expect(callback).toHaveBeenCalledTimes(2);
 });
 
 test("Test select stays fresh without leaking subscriptions", () => {

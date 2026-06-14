@@ -8,6 +8,7 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
@@ -15,7 +16,7 @@
     "test": "jest",
     "clean": "rm -rf ./dist",
     "build": "pnpm run prebuild && tsc --emitDeclarationOnly && rollup -c",
-    "bump": "pnpm run build && pnpm version patch"
+    "prepublishOnly": "pnpm run test && pnpm run build"
   },
   "repository": {
     "type": "git",

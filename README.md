@@ -3,6 +3,14 @@
 `chem-rx` provides a small atomic state management layer focused on simplicity.
 Useable with or without React!
 
+> **Breaking change (unreleased):** atoms now decide whether to notify
+> subscribers using an equality comparator that **defaults to `Object.is`**.
+> Two behaviors changed: a base atom no longer re-emits when you set an
+> `Object.is`-equal value, and `derive` no longer re-emits when its computed
+> output is `Object.is`-equal (it previously always re-emitted on every parent
+> update). To restore the old always-notify behavior, pass `equals: () => false`.
+> See [Equality & change detection](#equality--change-detection).
+
 ## Atom
 
 `chem-rx` is an atomic approach to state management, similar to
@@ -90,6 +98,14 @@ This can be especially useful for working with different parts of nested Array a
 Atoms created with `select` are **read-only** (`ReadOnlyAtom`). This prevents you from modifying original values that the atom was created from.
 Selected atoms are lazy: calling `value()` reads the latest parent snapshot, and subscribing to a selected atom listens to the parent only while that selected atom has active subscribers.
 
+By default a selected atom notifies subscribers only when the selected value changes by `Object.is`. Pass `{ equals }` to dedup by content instead (see [Equality & change detection](#equality--change-detection)):
+
+```
+const stacy = students.select("stacy", {
+  equals: (a, b) => a?.nickname === b?.nickname,
+});
+```
+
 ```
 const students = Atom({
   stacy: {
@@ -149,18 +165,35 @@ squared$.value()  // "16"
 squared$.set(2)
 ```
 
-You can optionally enforce `readOnly` on an atom at creation time if needed
+By default, a derived atom notifies subscribers only when its computed output changes by `Object.is`. When `deriveFn` returns a fresh object/array each time (so `Object.is` never matches), pass `{ equals }` to dedup by content (see [Equality & change detection](#equality--change-detection)):
+
+```
+const items$ = data$.derive((data) => data.items, {
+  equals: (a, b) => a.length === b.length && a.every((x, i) => x.id === b[i].id),
+});
+```
+
+You can optionally enforce `readOnly` on an atom at creation time if needed. The
+second argument also accepts an options object (`{ readOnly?, equals? }`):
 
 ```
 const atom$ = Atom(3, true);
+// equivalent:
+const atom2$ = Atom(3, { readOnly: true });
 
 // ERR: Property 'set' does not exist on type ReadOnlyAtom
 atom$.set(2)
+
+// content-based dedup on a writable atom
+const point$ = Atom({ x: 0, y: 0 }, { equals: (a, b) => a.x === b.x && a.y === b.y });
 ```
 
 ### Combining Atoms
 
 Multiple atoms can also be **combined** to create brand new atoms.
+
+`combine` produces a fresh array snapshot on every input change, so it re-emits on
+every update. To dedup by content, chain a `derive(fn, { equals })` onto it.
 
 Here's an example of joining a set of normalized data models
 
@@ -198,8 +231,14 @@ console.log(mary$.select('pets').value())
 
 ### Subscribing to updates
 
-Atoms emit values each time they're updated. You can subscribe callbacks to them
-to act on updates
+Atoms emit values each time they change. You can subscribe callbacks to them
+to act on updates.
+
+Subscribing fires your callback **immediately** with the atom's current value,
+then again on each subsequent change. "Change" is defined by the atom's equality
+comparator, which **defaults to `Object.is`** — so setting an `Object.is`-equal
+value is deduped and will not re-notify (see
+[Equality & change detection](#equality--change-detection)).
 
 ```
 const atom$ = Atom(3);
@@ -207,12 +246,78 @@ const atom$ = Atom(3);
 const subscription = atom$.subscribe(val => {
     console.log("Received value: ", val)
 })
+// immediately logs "Received value: 3"
 
-atom$.set(4)  // "Received value: 4"
+atom$.next(3)  // deduped: Object.is-equal, no log
+atom$.next(4)  // "Received value: 4"
 
 // Unsubscribe to clean up
 subscription.unsubscribe();
 ```
+
+### Equality & change detection
+
+Every atom notifies its subscribers only when its value **changes**, and what
+counts as a "change" is decided by an `equals(previous, next) => boolean`
+comparator. When `equals` returns `true`, the atom still updates `value()` but
+does **not** ping subscribers.
+
+The default comparator for every atom — `Atom`, `derive`, `select`, and
+`combine` — is `Object.is`:
+
+- For primitives (`number`, `string`, `boolean`, ...) that's value equality.
+- For objects and arrays it's **reference identity** — a brand-new object/array
+  is always treated as "changed," even if its contents are identical.
+
+#### Reference vs content equality
+
+Reference identity is the right default, but it breaks down when a producer
+rebuilds fresh objects/arrays on every update (e.g. a game loop that rebuilds
+its whole scene snapshot each tick). Every snapshot is a new reference, so
+`Object.is` reports "changed" every tick and subscribers fire constantly even
+when nothing meaningful changed.
+
+Supply a **content** comparator to fix this:
+
+```
+const tickets$ = frame$.derive(selectTickets, {
+  equals: (a, b) =>
+    a.length === b.length &&
+    a.every((t, i) => t.id === b[i].id && t.status === b[i].status),
+});
+// re-emits only when ticket content actually changes
+```
+
+#### Where you can pass `equals`
+
+```
+Atom(value, { equals })          // base atoms
+parent.derive(fn, { equals })    // derived atoms
+parent.select(key, { equals })   // selected atoms
+```
+
+To force the old "notify on every update" behavior, pass `equals: () => false`.
+
+#### You supply the comparator
+
+`chem-rx` intentionally ships **no** `shallowEqual`/`deepEqual` helpers. A
+generic shallow equal won't reach into nested or rebuilt structures (the tickets
+example above would still see new element references), and a generic deep equal
+is a correctness trap (`NaN`, `Date`, `Map`/`Set`, cycles, ...). Write the cheap
+field comparison your data actually needs, or stamp a revision/version number on
+the data and compare that.
+
+#### React and beyond
+
+Because equality lives on the atom (not in a React hook), content dedup benefits
+**every** subscriber — React components, effects, and other derived atoms alike,
+not just renders. React's `useSyncExternalStore` already bails out on
+`Object.is`-equal snapshots; an atom-level `equals` is what gives you the
+additional **content** dedup.
+
+> Advanced tip: a memoizing selector that returns the _previous_ reference when
+> the content is equal restores referential stability, so all downstream
+> consumers can dedup off plain `Object.is` after a single comparison.
 
 ### Signals
 
