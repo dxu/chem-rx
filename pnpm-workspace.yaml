@@ -1,0 +1,5 @@
+allowBuilds:
+  # fsevents is an optional macOS-only native file-watcher. Its build script is
+  # not needed to run tests or build the package (watchers fall back to polling),
+  # so we deny it. Set to `true` if you want the native addon for `jest --watch`.
+  fsevents: false
